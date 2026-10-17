@@ -1,12 +1,43 @@
-# Live-mode template. Live routing stays blocked until multi-check activation.
-# Do not set live_trading_enabled: true without risk approval + activation token.
-mode: live
+# Live-mode template. Live routing stays blocked until ALL gates pass.
+# Do not set live_trading_enabled: true without acknowledgement + risk approval.
+app_mode: live
 seed: 42
 live_trading_enabled: false
 
-paths:
-  approved_models: models/approved
-  reports: reports/paper_trading
+data:
+  universe: [SPY, QQQ]
+  processed_dir: data/processed
 
-# Live credentials come from RL_TRADER_LIVE_BROKER_* env vars only (never paper keys).
-broker_profile: live
+features:
+  lookback_bars: 20
+  causal_only: true
+
+risk:
+  max_position_size: 0.1
+  max_portfolio_exposure: 0.5
+  daily_loss_limit: 0.02
+  max_drawdown_limit: 0.1
+
+# Live credentials / environment must come from env for real activation.
+broker:
+  environment: live
+
+monitoring:
+  log_level: INFO
+  audit_enabled: true
+
+database:
+  url: sqlite:///./reports/rl_trader.db
+
+fundamentals:
+  wacc: 0.08
+  terminal_growth_rate: 0.02
+
+live:
+  # Must equal LIVE_TRADING_CONFIRMATION_PHRASE exactly when enabling live:
+  # I_UNDERSTAND_THIS_ENABLES_LIVE_BROKER_ORDERS
+  acknowledgement: ""
+  account_id: ""
+  max_live_capital: null
+  max_order_value: null
+  approved_model_manifest: models/approved/manifest.json

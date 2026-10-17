@@ -17,10 +17,47 @@ Historical data → validation → feature engineering → RL training
 - **Risk engine is independent** of the RL agent; it alone approves / rejects / resizes.
 - **Research logic is separate from broker execution.**
 - **Broker adapters share one interface**; paper and live credentials are separate env vars.
-- **Default mode is paper.** Live routing needs multi-check activation.
+- **Default mode is paper** (`APP_MODE=paper`). Live routing needs multi-check activation.
 - **No silent missing-data fills.** Gaps fail validation or require an audited remediation.
 - **Look-ahead bias prevention** is documented on data/features/validation stubs.
+- **Secrets are never logged**; account IDs are masked in repr/logs.
 
+## Configuration
+
+Typed nested models (pydantic / pydantic-settings) cover: **data**, **features**, **training**,
+**backtest**, **risk**, **broker**, **monitoring**, and **database** (plus fundamentals + live
+activation). YAML under `configs/{research,backtest,paper,live}.yaml` supplies structured
+defaults; environment variables override (see `.env.example`).
+
+Modes: `research` | `backtest` | `paper` | `live`. Root default is **paper**.
+
+### Live-trading confirmation phrase
+
+Exact value required in `LIVE_TRADING_ACKNOWLEDGEMENT` (character-for-character):
+
+```text
+I_UNDERSTAND_THIS_ENABLES_LIVE_BROKER_ORDERS
+```
+
+Defined as `rl_trader.config.LIVE_TRADING_CONFIRMATION_PHRASE`.
+
+### Live gate flow (fail-fast before broker connect)
+
+`assert_live_trading_allowed(settings)` / `evaluate_live_activation(settings)` require **all** of:
+
+1. `APP_MODE=live`
+2. `LIVE_TRADING_ENABLED=true`
+3. `BROKER_ENVIRONMENT=live`
+4. Acknowledgement equals the confirmation phrase above
+5. Approved model manifest exists with `"approved": true`
+6. Risk-engine startup checks pass
+7. Non-empty `LIVE_ACCOUNT_ID`
+8. Explicit `LIVE_MAX_CAPITAL` (> 0)
+9. Explicit `LIVE_MAX_ORDER_VALUE` (> 0)
+10. Explicit `risk.daily_loss_limit`
+
+If any gate fails, the process raises `LiveTradingBlockedError` and **must not** open a live
+broker connection.
 ## Dependency direction
 
 ```

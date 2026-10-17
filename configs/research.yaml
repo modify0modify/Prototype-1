@@ -1,11 +1,55 @@
 # Research-mode defaults (offline experiments). No broker contact.
-mode: research
+app_mode: research
 seed: 42
 live_trading_enabled: false
 
-paths:
-  raw_data: data/raw
-  interim_data: data/interim
-  processed_data: data/processed
-  checkpoints: models/checkpoints
-  reports: reports/backtests
+data:
+  universe: [SPY, QQQ, AAPL, MSFT]
+  raw_dir: data/raw
+  interim_dir: data/interim
+  processed_dir: data/processed
+  allow_missing_bars: false
+
+features:
+  lookback_bars: 20
+  normalize: true
+  causal_only: true
+  feature_version: "1"
+
+training:
+  algorithm: ppo
+  total_timesteps: 10000
+  learning_rate: 0.0003
+  batch_size: 64
+  gamma: 0.99
+  seed: 42
+  checkpoint_dir: models/checkpoints
+
+backtest:
+  initial_cash: 100000.0
+  commission_bps: 1.0
+  slippage_bps: 1.0
+  reports_dir: reports/backtests
+  walk_forward_folds: 3
+
+# Research may omit daily_loss_limit when risk is not active; set explicitly if used.
+risk:
+  max_position_size: 0.25
+  max_portfolio_exposure: 1.0
+  daily_loss_limit: 0.05
+  max_drawdown_limit: 0.2
+
+broker:
+  environment: paper
+
+monitoring:
+  log_level: INFO
+  log_json: false
+  audit_enabled: true
+
+database:
+  url: sqlite:///./reports/rl_trader.db
+
+fundamentals:
+  wacc: 0.08
+  terminal_growth_rate: 0.02

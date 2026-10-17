@@ -1,0 +1,38 @@
+# Backtest-mode defaults (offline evaluation; no live broker).
+app_mode: backtest
+seed: 42
+live_trading_enabled: false
+
+data:
+  universe: [SPY, QQQ]
+  processed_dir: data/processed
+
+features:
+  lookback_bars: 20
+  causal_only: true
+
+backtest:
+  initial_cash: 100000.0
+  commission_bps: 1.0
+  slippage_bps: 2.0
+  reports_dir: reports/backtests
+  walk_forward_folds: 5
+
+risk:
+  max_position_size: 0.2
+  max_portfolio_exposure: 1.0
+  daily_loss_limit: 0.03
+  max_drawdown_limit: 0.15
+
+broker:
+  environment: paper
+
+monitoring:
+  log_level: INFO
+
+database:
+  url: sqlite:///./reports/rl_trader.db
+
+fundamentals:
+  wacc: 0.08
+  terminal_growth_rate: 0.02

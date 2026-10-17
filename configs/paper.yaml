@@ -1,13 +1,45 @@
 # Paper-mode defaults (simulated execution). Default production-safe path.
-mode: paper
+app_mode: paper
 seed: 42
 live_trading_enabled: false
 
-paths:
-  raw_data: data/raw
-  processed_data: data/processed
-  approved_models: models/approved
-  reports: reports/paper_trading
+data:
+  universe: [SPY, QQQ, AAPL, MSFT]
+  processed_dir: data/processed
 
-# Paper credentials come from RL_TRADER_PAPER_BROKER_* env vars only.
-broker_profile: paper
+features:
+  lookback_bars: 20
+  causal_only: true
+
+training:
+  checkpoint_dir: models/checkpoints
+
+backtest:
+  reports_dir: reports/paper_trading
+
+risk:
+  max_position_size: 0.25
+  max_portfolio_exposure: 1.0
+  daily_loss_limit: 0.05
+  max_drawdown_limit: 0.2
+
+# Paper credentials come from env (BROKER__PAPER_API_KEY / nested) — never live keys.
+broker:
+  environment: paper
+
+monitoring:
+  log_level: INFO
+  log_json: false
+  audit_enabled: true
+
+database:
+  url: sqlite:///./reports/rl_trader.db
+
+fundamentals:
+  wacc: 0.08
+  terminal_growth_rate: 0.02
+
+live:
+  acknowledgement: ""
+  account_id: ""
+  approved_model_manifest: models/approved/manifest.json
