@@ -76,6 +76,10 @@ reports/db_exports/*
 *.sqlite
 *.sqlite3
 
+# Deploy runtime artifacts
+logs/
+backups/
+
 # Torch / ML caches
 .cache/
 lightning_logs/
