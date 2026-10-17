@@ -252,7 +252,7 @@ make run-smoke
 | `portfolio` | target portfolio types |
 | `execution` | paper executor (live executor gated, not re-exported) |
 | `risk` | deterministic approve / reject / resize |
-| `brokers` | shared `BrokerAdapter`; paper + guarded live |
+| `brokers` | shared `BrokerAdapter`; persistent `PaperBroker` sim; live stub only |
 | `monitoring` | structured logging + audit recorder |
 | `storage` | SQLAlchemy / SQLite |
 | `utils` | seeds + import-boundary helpers |

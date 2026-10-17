@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from rl_trader.brokers.paper import PaperBroker, PaperTradingDisabledError
+from rl_trader.brokers.paper import PaperBroker, PaperBrokerConfig
 from rl_trader.config.models import BacktestSettings, EnvironmentSettings, FeatureSettings
 from rl_trader.data.validation import assert_survivorship_policy, validate_ohlcv_frame
 from rl_trader.environment.reward import compute_reward
@@ -71,11 +71,34 @@ def test_reward_does_not_double_count_embedded_costs() -> None:
     assert bd2.transaction_cost_penalty == pytest.approx(0.005)
 
 
-def test_paper_broker_gated_by_default() -> None:
-    with pytest.raises(PaperTradingDisabledError, match="gated"):
-        PaperBroker()
-    stub = PaperBroker(allow_incomplete=True)
-    assert stub.incomplete is True
+def test_paper_broker_applies_costs_by_default(tmp_path: Path) -> None:
+    """C3 fix: PaperBroker is enabled and records cost metadata on fills."""
+    from datetime import UTC, datetime
+
+    from rl_trader.brokers.types import OrderRequest, OrderSide, Quote
+
+    now = datetime(2024, 6, 3, 15, 0, tzinfo=UTC)
+    broker = PaperBroker(
+        config=PaperBrokerConfig(
+            data_dir=tmp_path / "pb",
+            initial_cash=10_000.0,
+            commission_bps=10.0,
+            spread_bps=2.0,
+            slippage_bps=1.0,
+        ),
+        now_fn=lambda: now,
+    )
+    assert broker.incomplete is False
+    broker.connect()
+    broker.set_quote(
+        Quote(symbol="SPY", bid=99.9, ask=100.1, last=100.0, timestamp=now)
+    )
+    order = broker.submit_order(
+        OrderRequest(symbol="SPY", side=OrderSide.BUY, qty=1.0)
+    )
+    assert order.commission > 0.0
+    assert broker.get_account().cash < 10_000.0
+    broker.disconnect()
 
 
 def test_fundamentals_not_visible_on_publication_day() -> None:

@@ -1,12 +1,9 @@
-"""Paper execution orchestration (risk → paper broker).
-
-Paper path stays gated via :class:`PaperBroker` until costs are implemented.
-"""
+"""Paper execution orchestration (risk → paper broker)."""
 
 from __future__ import annotations
 
 from rl_trader.brokers.base import BrokerFill
-from rl_trader.brokers.paper import PaperBroker, PaperTradingDisabledError
+from rl_trader.brokers.paper import PaperBroker, PaperBrokerConfig, PaperTradingDisabledError
 from rl_trader.portfolio.targets import TargetPortfolio
 from rl_trader.risk.engine import RiskEngine
 
@@ -21,10 +18,17 @@ class PaperExecutor:
         risk_engine: RiskEngine | None = None,
         broker: PaperBroker | None = None,
         *,
-        allow_incomplete: bool = False,
+        config: PaperBrokerConfig | None = None,
+        allow_incomplete: bool | None = None,
+        auto_connect: bool = True,
     ) -> None:
         self.risk_engine = risk_engine or RiskEngine()
-        self.broker = broker or PaperBroker(allow_incomplete=allow_incomplete)
+        if broker is not None:
+            self.broker = broker
+        else:
+            self.broker = PaperBroker(config=config, allow_incomplete=allow_incomplete)
+        if auto_connect and not self.broker.connected:
+            self.broker.connect()
 
     def execute(self, target: TargetPortfolio) -> BrokerFill:
         """Review with risk engine and submit to paper broker."""

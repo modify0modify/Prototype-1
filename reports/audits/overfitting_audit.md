@@ -45,8 +45,8 @@ This document lists every finding with severity, location, why it matters, the c
 1. **Where:** `src/rl_trader/brokers/paper.py` (`PaperBroker`); `scripts/run_paper_trader.py`
 2. **Why:** Zero-cost fills vs research `simulate_rebalance` costs make any paper PnL incomparable and unsafe as a go-live gate.
 3. **Severity:** critical
-4. **Correction:** `PaperBroker` raises `PaperTradingDisabledError` unless `allow_incomplete=True`. `run_paper_trader.py` exits non-zero by default. Paper path stays gated.
-5. **Regression:** `tests/unit/test_overfitting_audit_guards.py::test_paper_broker_gated_by_default`
+4. **Correction:** `PaperBroker` now persists a simulated ledger and applies configurable commission, spread, and slippage on every fill. `PaperTradingDisabledError` is retained only for import compatibility. Live broker remains an unimplemented stub.
+5. **Regression:** `tests/unit/test_overfitting_audit_guards.py::test_paper_broker_applies_costs_by_default`; `tests/unit/test_paper_broker.py`; `tests/integration/test_paper_trading_cycle.py`
 
 ---
 
@@ -120,10 +120,11 @@ This document lists every finding with severity, location, why it matters, the c
 
 | Item | Status |
 | --- | --- |
-| `PaperBroker` default | **Disabled** (`PaperTradingDisabledError`) |
-| `scripts/run_paper_trader.py` | Exits `2` with gate message |
+| `PaperBroker` default | **Enabled** with cost model + persistent ledger |
+| `scripts/run_paper_trader.py` | Connects paper ledger; `--demo` runs a local cycle |
+| Live broker | **Unimplemented stub** (still gated; no unsupervised live) |
 | Live broker import from research | Still blocked by import boundaries |
-| Proceed to paper trading? | **No** — criticals cleared in research sim, but paper cost model not implemented |
+| Proceed to live trading? | **No** — paper sim only; live adapter not implemented |
 
 ---
 
@@ -145,7 +146,7 @@ This document lists every finding with severity, location, why it matters, the c
 
 - Adjusted-close vendor revisions remain a data-vintage risk; pin cache downloads for reproducible studies.
 - True point-in-time share/float universes are not supplied — research configs must keep `survivorship_bias_acknowledged: true` or provide PIT membership.
-- Paper/live cost-accurate execution is still unimplemented (intentionally gated).
+- Live cost-accurate execution is still unimplemented (intentionally stubbed / gated). PaperBroker applies its own configurable cost model.
 
 ---
 
