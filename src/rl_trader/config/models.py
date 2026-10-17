@@ -431,12 +431,20 @@ class MonitoringSettings(BaseModel):
 
 
 class DatabaseSettings(BaseModel):
-    """Persistence settings."""
+    """Persistence settings (SQLAlchemy / SQLite).
+
+    Never configure the database to store broker API keys or other secrets —
+    the storage layer rejects secret-like column names and sanitizes config
+    snapshots before insert.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
     url: str = "sqlite:///./reports/rl_trader.db"
     echo: bool = False
+    # When True, paper trading dual-writes decisions/orders into SQL (file
+    # ledgers remain intact).
+    persist_paper_trading: bool = False
 
 
 class FundamentalValuationSettings(BaseModel):

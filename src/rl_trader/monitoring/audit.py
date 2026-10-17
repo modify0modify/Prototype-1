@@ -9,7 +9,8 @@ from typing import Any
 
 from sqlalchemy.engine import Engine
 
-from rl_trader.storage.db import AuditEventRow, session_scope
+from rl_trader.storage.db import session_scope
+from rl_trader.storage.models import AuditEventRow
 
 
 @dataclass(frozen=True, slots=True)

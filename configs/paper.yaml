@@ -66,6 +66,9 @@ monitoring:
 
 database:
   url: sqlite:///./reports/rl_trader.db
+  echo: false
+  # Optional SQL dual-write; file ledgers remain primary.
+  persist_paper_trading: false
 
 fundamentals:
   wacc: 0.08

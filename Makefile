@@ -1,4 +1,4 @@
-.PHONY: install test lint typecheck run-smoke download-data build-features run-benchmarks train-agent train-smoke compare-agents walk-forward walk-forward-smoke run-paper run-paper-dry
+.PHONY: install test lint typecheck run-smoke download-data build-features run-benchmarks train-agent train-smoke compare-agents walk-forward walk-forward-smoke run-paper run-paper-dry migrate db-upgrade db-current db-export
 
 PYTHON ?= python3.12
 VENV ?= .venv
@@ -7,6 +7,8 @@ PY := $(VENV)/bin/python
 CONFIG ?= configs/research.yaml
 PAPER_CONFIG ?= configs/paper.yaml
 ALGORITHM ?= ppo
+DATABASE_URL ?= sqlite:///./reports/rl_trader.db
+EXPORT_DIR ?= reports/db_exports
 
 install:
 	$(PYTHON) -m venv $(VENV)
@@ -54,3 +56,12 @@ run-paper:
 
 run-paper-dry:
 	$(PY) scripts/run_paper_trader.py --config $(PAPER_CONFIG) --demo --dry-run
+
+migrate db-upgrade:
+	DATABASE_URL=$(DATABASE_URL) $(PY) -m alembic upgrade head
+
+db-current:
+	DATABASE_URL=$(DATABASE_URL) $(PY) -m alembic current
+
+db-export:
+	DATABASE_URL=$(DATABASE_URL) $(PY) scripts/export_db_csv.py --output-dir $(EXPORT_DIR)

@@ -270,8 +270,23 @@ State under `reports/paper_trading/` (`heartbeat.json`, `decisions.jsonl`, lock 
 | `risk` | deterministic approve / reject / resize |
 | `brokers` | shared `BrokerAdapter`; persistent `PaperBroker` sim; live stub only |
 | `monitoring` | structured logging + audit recorder |
-| `storage` | SQLAlchemy / SQLite |
+| `storage` | SQLAlchemy / SQLite + Alembic migrations (no secrets) |
 | `utils` | seeds + import-boundary helpers |
+
+## Database
+
+```bash
+make migrate                 # alembic upgrade head (DATABASE_URL overrideable)
+make db-current
+make db-export               # CSV dump under reports/db_exports/
+```
+
+Schema covers market metadata, feature manifests, model runs/checkpoints/approvals,
+agent/risk decisions, orders (unique idempotency keys), fills with separate
+commission/spread/slippage costs, positions, portfolio snapshots, metrics, alerts,
+kill-switch events, and configuration versions. Paper trading can dual-write when
+`database.persist_paper_trading: true` without replacing file ledgers.
+**Secrets are never stored** (enforced in schema + config sanitization).
 
 ## Smoke checks
 

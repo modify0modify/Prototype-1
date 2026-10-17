@@ -1,32 +1,18 @@
-"""SQLAlchemy / SQLite persistence stubs."""
+"""SQLAlchemy engine / session helpers for SQLite (and compatible URLs)."""
 
 from __future__ import annotations
 
 from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import UTC, datetime
 from pathlib import Path
 
-from sqlalchemy import DateTime, String, Text, create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 
 class Base(DeclarativeBase):
-    """SQLAlchemy declarative base."""
-
-
-class AuditEventRow(Base):
-    """Persisted decision / order audit event (skeleton table)."""
-
-    __tablename__ = "audit_events"
-
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(UTC)
-    )
-    event_type: Mapped[str] = mapped_column(String(64))
-    payload_json: Mapped[str] = mapped_column(Text)
+    """SQLAlchemy declarative base shared by all storage models."""
 
 
 def ensure_sqlite_parent(database_url: str) -> None:
@@ -38,11 +24,41 @@ def ensure_sqlite_parent(database_url: str) -> None:
             path.parent.mkdir(parents=True, exist_ok=True)
 
 
-def create_db_engine(database_url: str) -> Engine:
-    """Create a SQLAlchemy engine and ensure schema exists."""
+def _enable_sqlite_fks(engine: Engine) -> None:
+    """Enforce foreign keys on SQLite connections."""
+
+    @event.listens_for(engine, "connect")
+    def _set_sqlite_pragma(dbapi_connection: object, _connection_record: object) -> None:
+        if engine.dialect.name != "sqlite":
+            return
+        cursor = dbapi_connection.cursor()  # type: ignore[attr-defined]
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
+
+def create_db_engine(
+    database_url: str,
+    *,
+    echo: bool = False,
+    create_schema: bool = False,
+) -> Engine:
+    """Create a SQLAlchemy engine.
+
+    Prefer Alembic migrations (``make migrate``) for durable databases.
+    Pass ``create_schema=True`` only for ephemeral tests that skip migrations.
+    """
     ensure_sqlite_parent(database_url)
-    engine = create_engine(database_url, future=True)
-    Base.metadata.create_all(engine)
+    connect_args: dict[str, object] = {}
+    if database_url.startswith("sqlite"):
+        # Needed for :memory: shared across connections in tests when using StaticPool.
+        connect_args["check_same_thread"] = False
+    engine = create_engine(database_url, future=True, echo=echo, connect_args=connect_args)
+    _enable_sqlite_fks(engine)
+    if create_schema:
+        # Import models so metadata is fully populated.
+        import rl_trader.storage.models  # noqa: F401
+
+        Base.metadata.create_all(engine)
     return engine
 
 

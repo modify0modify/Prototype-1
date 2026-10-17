@@ -118,6 +118,8 @@ class PaperTradingService:
         self._lock_held = False
         self._model_frozen = False
         self.last_retrain_hook: RetrainHookResult | None = None
+        self._db_sink: Any | None = None
+        self._db_engine: Any | None = None
 
     # ------------------------------------------------------------------ #
     # Lifecycle
@@ -181,6 +183,8 @@ class PaperTradingService:
             model_id=self._model.model_id,
             now=now,
         )
+
+        self._init_db_sink()
 
         self.heartbeat.beat(
             now=now,
@@ -436,6 +440,24 @@ class PaperTradingService:
             },
         )
         self.decisions.append(record)
+        if self._db_sink is not None:
+            try:
+                db_ids = self._db_sink.persist_cycle(
+                    record,
+                    broker=broker,
+                    commission_bps=self.pt.commission_bps,
+                    spread_bps=self.pt.spread_bps,
+                    slippage_bps=self.pt.slippage_bps,
+                )
+                self.logger.info("dual-wrote cycle to database ids=%s", db_ids)
+            except Exception:
+                self.logger.exception("database dual-write failed (file ledger intact)")
+                self.alerts.emit(
+                    "error",
+                    "database_dual_write_failed",
+                    now=now,
+                    context={"cycle_id": cycle_id},
+                )
         self.metrics.update_from_cycle(
             now=now,
             risk_decision=risk_result.decision.value,
@@ -470,6 +492,44 @@ class PaperTradingService:
     # ------------------------------------------------------------------ #
     # Internals
     # ------------------------------------------------------------------ #
+
+    def _init_db_sink(self) -> None:
+        """Optionally open SQL dual-write when configured (file ledgers stay primary)."""
+        db = self.settings.database
+        if not db.persist_paper_trading:
+            return
+        from rl_trader.storage.db import create_db_engine
+        from rl_trader.storage.migrate import upgrade_head
+        from rl_trader.storage.paper_sink import PaperTradingDBSink
+        from rl_trader.storage.repository import StorageRepository
+
+        upgrade_head(db.url)
+        engine = create_db_engine(db.url, echo=db.echo, create_schema=False)
+        repo = StorageRepository(engine)
+        cfg_id = repo.upsert_configuration_version(
+            self.settings.risk.configuration_version,
+            {
+                "risk": self.settings.risk.model_dump(mode="json"),
+                "paper_trading": self.pt.model_dump(mode="json"),
+                "broker": {"environment": self.settings.broker.environment},
+            },
+        )
+        assert self._model is not None
+        ckpt_id = repo.record_checkpoint(
+            model_id=self._model.model_id,
+            algorithm=self._model.algorithm,
+            checkpoint_path=str(self._model.checkpoint_dir),
+            model_version=self._model.model_version,
+            package_version=(
+                self._model.metadata.package_version if self._model.metadata else ""
+            ),
+        )
+        self._db_engine = engine
+        self._db_sink = PaperTradingDBSink(
+            engine,
+            model_checkpoint_id=ckpt_id,
+            configuration_version_id=cfg_id,
+        )
 
     def _confirm_paper_mode(self) -> None:
         if self.settings.app_mode is not RuntimeMode.PAPER:

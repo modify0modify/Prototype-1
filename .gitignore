@@ -70,6 +70,8 @@ reports/benchmarks/*
 reports/agent_comparison/*
 !reports/agent_comparison/.gitkeep
 reports/*.db
+reports/db_exports/*
+!reports/db_exports/.gitkeep
 *.db
 *.sqlite
 *.sqlite3
