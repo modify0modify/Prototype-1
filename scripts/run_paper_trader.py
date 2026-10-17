@@ -23,7 +23,7 @@ from rl_trader.config import get_settings
 from rl_trader.monitoring import configure_logging, get_logger
 
 
-def _demo_cycle(broker: PaperBroker, logger: object) -> int:
+def _demo_cycle(broker: PaperBroker) -> int:
     now = datetime.now(UTC)
     broker.set_quote(
         Quote(symbol="DEMO", bid=99.9, ask=100.1, last=100.0, timestamp=now)
@@ -39,8 +39,8 @@ def _demo_cycle(broker: PaperBroker, logger: object) -> int:
     )
     account = broker.get_account()
     positions = broker.get_positions()
-    log = getattr(logger, "info")
-    log(
+    logger = get_logger("rl_trader.scripts.run_paper_trader")
+    logger.info(
         "demo cycle: order=%s status=%s cash=%.2f positions=%d",
         order.order_id,
         order.status,
@@ -86,7 +86,7 @@ def main(argv: list[str] | None = None) -> int:
             account.equity,
         )
         if args.demo:
-            return _demo_cycle(broker, logger)
+            return _demo_cycle(broker)
         logger.info("pass --demo to run a local simulated order cycle")
         return 0
     finally:

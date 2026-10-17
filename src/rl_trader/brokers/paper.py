@@ -30,7 +30,6 @@ from rl_trader.brokers.types import (
     Position,
     Quote,
 )
-from rl_trader.portfolio.targets import TargetPortfolio
 from rl_trader.risk.engine import RiskResult
 
 # Terminal statuses — cannot cancel / re-fill.
