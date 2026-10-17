@@ -287,6 +287,13 @@ make run-paper-dry   # prospective paper cycle, no simulated orders
 make run-paper       # prospective paper cycle with PaperBroker fills
 ```
 
+## Deployment (paper only)
+
+See **[`docs/deployment.md`](docs/deployment.md)** for Local Linux, Cloud VM, and
+containerised server commands (install → paper dry-run → loop service → dashboard →
+backup/restore → model/config rollback). Docker Compose defaults to **paper**;
+`LIVE_TRADING_ENABLED` stays false. Process lock: `reports/paper_trading/paper_trader.lock`.
+
 ## Prospective paper trading
 
 ```bash

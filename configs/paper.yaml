@@ -93,8 +93,14 @@ paper_trading:
 
 monitoring:
   log_level: INFO
+  # Prefer JSON in deploy; set MONITORING__LOG_JSON=true via env to override.
   log_json: false
   audit_enabled: true
+  # Rotating file logs (stdout always on). EXAMPLE size/count — override in .env.
+  log_dir: logs
+  log_filename: rl_trader.log
+  log_max_bytes: 10485760
+  log_backup_count: 5
 
 database:
   url: sqlite:///./reports/rl_trader.db

@@ -496,6 +496,12 @@ class MonitoringSettings(BaseModel):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     log_json: bool = False
     audit_enabled: bool = True
+    # Optional rotating file logs (in addition to stdout). Empty = stdout only.
+    log_dir: Path | None = None
+    log_filename: str = "rl_trader.log"
+    # EXAMPLE rotation knobs for deploy (bytes / backup count).
+    log_max_bytes: Annotated[int, Field(ge=1_024)] = 10_485_760  # 10 MiB
+    log_backup_count: Annotated[int, Field(ge=0, le=100)] = 5
 
 
 class DatabaseSettings(BaseModel):

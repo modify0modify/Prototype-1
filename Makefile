@@ -68,3 +68,26 @@ db-export:
 
 dashboard:
 	$(PY) scripts/run_dashboard.py --host 127.0.0.1 --port 8505
+
+# --- Paper deploy helpers (never enable live) ---
+paper-health:
+	$(PY) scripts/healthcheck_paper.py --heartbeat reports/paper_trading/heartbeat.json --allow-stopped
+
+backup-paper:
+	bash scripts/backup_paper.sh backups
+
+restore-paper:
+	@test -n "$(SRC)" || (echo "usage: make restore-paper SRC=backups/paper_..." && exit 2)
+	bash scripts/restore_paper.sh $(SRC)
+
+docker-build:
+	docker compose build
+
+docker-up:
+	docker compose up -d paper-trader
+
+docker-down:
+	docker compose down
+
+docker-logs:
+	docker compose logs -f paper-trader
