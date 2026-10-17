@@ -93,7 +93,7 @@ def test_prospective_paper_loop_end_to_end(tmp_path: Path) -> None:
     assert result.shutdown is False
     assert result.skipped is False
     assert result.model_id == "integ-paper"
-    assert result.model_version == "integ-1"
+    assert result.model_version == "0.1.0-demo"
     assert result.risk_decision in {"approved", "resized"}
     assert result.order_ids
 
@@ -104,7 +104,7 @@ def test_prospective_paper_loop_end_to_end(tmp_path: Path) -> None:
     assert (state / "paper_trader.lock").is_file() or True  # released after exit
 
     decision = json.loads((state / "decisions.jsonl").read_text().strip().splitlines()[-1])
-    assert decision["model_version"] == "integ-1"
+    assert decision["model_version"] == "0.1.0-demo"
     assert decision["dry_run"] is False
     assert decision["order_ids"]
     assert decision["risk_decision"] in {"approved", "resized"}

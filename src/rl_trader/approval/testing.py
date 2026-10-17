@@ -27,6 +27,13 @@ def write_sealed_approved_manifest(
 
 def write_sealed_unapproved_manifest(root: Path, *, model_id: str = "denied-model") -> Path:
     """Write a sealed manifest with approval_status=rejected (fails paper/live entry)."""
+    from datetime import date
+
+    from rl_trader.agents.checkpoint import (
+        CheckpointMetadata,
+        TrainingPeriod,
+        save_checkpoint_metadata,
+    )
     from rl_trader.approval.evidence import example_passing_paper_evidence
     from rl_trader.approval.manifest import (
         Period,
@@ -34,13 +41,7 @@ def write_sealed_unapproved_manifest(root: Path, *, model_id: str = "denied-mode
         seal_manifest,
         write_manifest_file,
     )
-    from rl_trader.agents.checkpoint import (
-        CheckpointMetadata,
-        TrainingPeriod,
-        save_checkpoint_metadata,
-    )
     from rl_trader.features.engineering import FeatureSpec
-    from datetime import date
 
     root = Path(root)
     ckpt = root / "checkpoint"

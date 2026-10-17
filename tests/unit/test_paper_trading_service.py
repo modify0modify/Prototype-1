@@ -8,11 +8,6 @@ from pathlib import Path
 
 import pytest
 
-from rl_trader.agents.checkpoint import (
-    CheckpointMetadata,
-    TrainingPeriod,
-    save_checkpoint_metadata,
-)
 from rl_trader.brokers.paper import PaperBroker, PaperBrokerConfig
 from rl_trader.config import AppSettings, RuntimeMode
 from rl_trader.config.models import (
@@ -21,7 +16,6 @@ from rl_trader.config.models import (
     PaperTradingSettings,
     RiskSettings,
 )
-from rl_trader.features.engineering import FeatureSpec
 from rl_trader.paper_trading.demo_model import provision_demo_approved_model
 from rl_trader.paper_trading.locks import ProcessLock, ProcessLockError
 from rl_trader.paper_trading.market_data import (
@@ -31,13 +25,6 @@ from rl_trader.paper_trading.market_data import (
 )
 from rl_trader.paper_trading.model_loader import ApprovedModelError, load_approved_model
 from rl_trader.paper_trading.service import PaperTradingService
-
-
-def _specs() -> tuple[FeatureSpec, ...]:
-    return (
-        FeatureSpec(name="returns_1d", lookback=1),
-        FeatureSpec(name="vol_20d", lookback=20),
-    )
 
 
 def _write_stub_approved(root: Path, *, approved: bool = True, n_assets: int = 2) -> Path:
@@ -262,7 +249,7 @@ def test_risk_reject_reason_persisted(tmp_path: Path) -> None:
     doc = json.loads((tmp_path / "state" / "decisions.jsonl").read_text().strip().splitlines()[-1])
     assert doc["risk_decision"] == "rejected"
     assert doc["risk_reason"]
-    assert doc["model_version"] == "9"
+    assert doc["model_version"] == "0.1.0-demo"
     assert doc["rejected_orders"]
     assert doc["rejected_orders"][0]["reason"]
 
