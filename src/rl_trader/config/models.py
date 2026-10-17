@@ -155,11 +155,12 @@ class TrainingSettings(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    algorithm: Literal["ppo"] = "ppo"
+    algorithm: Literal["ppo", "sac", "td3"] = "ppo"
     model_id: str = "ppo-portfolio"
     total_timesteps: Annotated[int, Field(ge=1)] = 10_000
     learning_rate: Annotated[float, Field(gt=0.0, le=1.0)] = 3e-4
     batch_size: Annotated[int, Field(ge=1)] = 64
+    # PPO-specific
     n_steps: Annotated[int, Field(ge=1)] = 256
     n_epochs: Annotated[int, Field(ge=1, le=100)] = 5
     gamma: Annotated[float, Field(gt=0.0, le=1.0)] = 0.99
@@ -168,9 +169,20 @@ class TrainingSettings(BaseModel):
     ent_coef: Annotated[float, Field(ge=0.0, le=1.0)] = 0.0
     vf_coef: Annotated[float, Field(ge=0.0, le=10.0)] = 0.5
     max_grad_norm: Annotated[float, Field(gt=0.0)] = 0.5
+    # SAC / TD3 (off-policy) — continuous Box actions match PortfolioEnv
+    buffer_size: Annotated[int, Field(ge=100)] = 50_000
+    learning_starts: Annotated[int, Field(ge=0)] = 100
+    tau: Annotated[float, Field(gt=0.0, le=1.0)] = 0.005
+    train_freq: Annotated[int, Field(ge=1)] = 1
+    gradient_steps: Annotated[int, Field(ge=1)] = 1
+    # TD3-specific
+    policy_delay: Annotated[int, Field(ge=1)] = 2
+    target_policy_noise: Annotated[float, Field(ge=0.0)] = 0.2
+    target_noise_clip: Annotated[float, Field(ge=0.0)] = 0.5
     seed: Annotated[int, Field(ge=0)] = 42
     device: str = "cpu"
     checkpoint_dir: Path = Path("models/checkpoints")
+    comparison_dir: Path = Path("reports/agent_comparison")
     # Inclusive train / validation / test windows (calendar dates).
     train_start: date = date(2020, 1, 1)
     train_end: date = date(2021, 12, 31)

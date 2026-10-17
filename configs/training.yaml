@@ -28,9 +28,18 @@ training:
   ent_coef: 0.0
   vf_coef: 0.5
   max_grad_norm: 0.5
+  buffer_size: 50000
+  learning_starts: 100
+  tau: 0.005
+  train_freq: 1
+  gradient_steps: 1
+  policy_delay: 2
+  target_policy_noise: 0.2
+  target_noise_clip: 0.5
   seed: 42
   device: cpu
   checkpoint_dir: models/checkpoints
+  comparison_dir: reports/agent_comparison
   train_start: 2020-01-02
   train_end: 2021-06-30
   val_start: 2021-07-01

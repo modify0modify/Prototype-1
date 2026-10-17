@@ -56,6 +56,7 @@ class TrainingManifest:
     test_eval_mean_reward: float | None = None
     early_stopped: bool = False
     model_selected_on: str = "validation"
+    algorithm_hyperparameters: dict[str, Any] = field(default_factory=dict)
     notes: str = ""
     extra: dict[str, Any] = field(default_factory=dict)
 
@@ -86,6 +87,7 @@ class TrainingManifest:
             "test_eval_mean_reward": self.test_eval_mean_reward,
             "early_stopped": self.early_stopped,
             "model_selected_on": self.model_selected_on,
+            "algorithm_hyperparameters": self.algorithm_hyperparameters,
             "notes": self.notes,
             "extra": self.extra,
         }
@@ -141,6 +143,7 @@ class TrainingManifest:
             ),
             early_stopped=bool(data.get("early_stopped", False)),
             model_selected_on=str(data.get("model_selected_on", "validation")),
+            algorithm_hyperparameters=dict(data.get("algorithm_hyperparameters") or {}),
             notes=str(data.get("notes", "")),
             extra=dict(data.get("extra") or {}),
         )

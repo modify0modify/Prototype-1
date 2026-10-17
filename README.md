@@ -128,18 +128,20 @@ python scripts/build_features.py --config configs/research.yaml
 make build-features
 ```
 
-## PPO training (Stable-Baselines3)
+## Multi-algo training (PPO / SAC / TD3)
 
 ```bash
 python scripts/train_agent.py --config configs/research.yaml --algorithm ppo
-make train-smoke   # tiny fixture timesteps; offline
+python scripts/train_agent.py --config configs/research.yaml --algorithm sac --fixture
+make train-smoke ALGORITHM=td3
+make compare-agents   # smoke compare + random-policy control → reports/agent_comparison/
 ```
 
-Scalers fit on the **training** window only; early stopping / best-model
-selection use **validation** only; the **test** set is never used for fitting
-or selection (optional post-hoc report eval only). Artifacts land under
-`models/checkpoints/<model_id>/` (weights, scaler, metadata, feature + training
-manifests, evaluation results).
+Common `SB3PortfolioAgent` interface; continuous long/cash `Box` actions for all
+three algorithms. Scalers fit on **train** only; candidates selected on
+**validation** only; **test** reported once after selection. Comparison reports
+do **not** declare a winner. A random-policy control checks the env does not
+accidentally mint profits.
 
 ## Deterministic benchmarks (pre-RL)
 

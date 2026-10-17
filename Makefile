@@ -1,10 +1,11 @@
-.PHONY: install test lint typecheck run-smoke download-data build-features run-benchmarks train-agent train-smoke
+.PHONY: install test lint typecheck run-smoke download-data build-features run-benchmarks train-agent train-smoke compare-agents
 
 PYTHON ?= python3.12
 VENV ?= .venv
 PIP := $(VENV)/bin/pip
 PY := $(VENV)/bin/python
 CONFIG ?= configs/research.yaml
+ALGORITHM ?= ppo
 
 install:
 	$(PYTHON) -m venv $(VENV)
@@ -33,7 +34,10 @@ run-benchmarks:
 	$(PY) scripts/run_benchmarks.py --config $(CONFIG)
 
 train-agent:
-	$(PY) scripts/train_agent.py --config $(CONFIG) --algorithm ppo
+	$(PY) scripts/train_agent.py --config $(CONFIG) --algorithm $(ALGORITHM)
 
 train-smoke:
-	$(PY) scripts/train_agent.py --config $(CONFIG) --algorithm ppo --fixture
+	$(PY) scripts/train_agent.py --config $(CONFIG) --algorithm $(ALGORITHM) --fixture
+
+compare-agents:
+	$(PY) scripts/compare_agents.py --config $(CONFIG) --fixture

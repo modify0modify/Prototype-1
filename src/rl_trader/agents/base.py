@@ -1,24 +1,20 @@
-"""RL agent stubs — emit target portfolios only; never call brokers."""
+"""Heuristic / stub agents — emit target portfolios only; never call brokers."""
 
 from __future__ import annotations
 
-from typing import Protocol
-
 import numpy as np
 
+from rl_trader.agents.interface import PortfolioAgent
 from rl_trader.portfolio.targets import TargetPortfolio
 
-
-class PortfolioAgent(Protocol):
-    """Interface for trained or heuristic portfolio agents."""
-
-    def predict_target(self, observation: np.ndarray) -> TargetPortfolio:
-        """Return a target portfolio for the given observation."""
-        ...
+__all__ = ["PortfolioAgent", "StubAgent"]
 
 
 class StubAgent:
     """Equal-weight placeholder agent — no learning implemented."""
+
+    name = "stub_equal_weight"
+    algorithm = "stub"
 
     def __init__(self, n_assets: int = 2) -> None:
         if n_assets < 1:

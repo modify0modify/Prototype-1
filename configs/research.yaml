@@ -68,9 +68,19 @@ training:
   ent_coef: 0.0
   vf_coef: 0.5
   max_grad_norm: 0.5
+  # SAC / TD3 off-policy knobs (continuous Box actions match PortfolioEnv)
+  buffer_size: 50000
+  learning_starts: 100
+  tau: 0.005
+  train_freq: 1
+  gradient_steps: 1
+  policy_delay: 2
+  target_policy_noise: 0.2
+  target_noise_clip: 0.5
   seed: 42
   device: cpu
   checkpoint_dir: models/checkpoints
+  comparison_dir: reports/agent_comparison
   # Inclusive windows — scaler fits on train only; early-stop on val; test unused for selection.
   train_start: 2020-01-02
   train_end: 2021-06-30

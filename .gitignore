@@ -67,6 +67,8 @@ reports/valuations/*
 !reports/valuations/.gitkeep
 reports/benchmarks/*
 !reports/benchmarks/.gitkeep
+reports/agent_comparison/*
+!reports/agent_comparison/.gitkeep
 reports/*.db
 *.db
 *.sqlite

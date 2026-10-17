@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Train a PPO portfolio agent (Stable-Baselines3).
+"""Train a portfolio agent with PPO, SAC, or TD3 (Stable-Baselines3).
 
 Reads settings from YAML/config. Fits feature scalers on the training window
 only; early-stops / selects on validation; never uses the test set for fitting
@@ -14,12 +14,13 @@ from pathlib import Path
 
 import numpy as np
 
-from rl_trader.agents.ppo_trainer import train_ppo
+from rl_trader.agents.registry import SUPPORTED_ALGORITHMS
 from rl_trader.agents.splits import (
     SplitEpisodes,
     split_episode_by_dates,
     split_episode_by_fractions,
 )
+from rl_trader.agents.trainer import train_agent
 from rl_trader.config import get_settings
 from rl_trader.config.models import TrainingSettings
 from rl_trader.environment.episode import EpisodeData
@@ -93,7 +94,7 @@ def _episode_for_configured_dates(
 
 
 def main(argv: list[str] | None = None) -> int:
-    """CLI entrypoint for PPO training."""
+    """CLI entrypoint for SB3 portfolio training."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--config",
@@ -105,7 +106,8 @@ def main(argv: list[str] | None = None) -> int:
         "--algorithm",
         type=str,
         default=None,
-        help="Override training.algorithm (only 'ppo' supported)",
+        choices=list(SUPPORTED_ALGORITHMS),
+        help="Override training.algorithm (ppo | sac | td3)",
     )
     parser.add_argument(
         "--fixture",
@@ -147,8 +149,12 @@ def main(argv: list[str] | None = None) -> int:
     if updates:
         training = training.model_copy(update=updates)
 
-    if training.algorithm != "ppo":
-        logger.error("unsupported algorithm %r (only ppo)", training.algorithm)
+    if training.algorithm not in SUPPORTED_ALGORITHMS:
+        logger.error(
+            "unsupported algorithm %r; supported=%s",
+            training.algorithm,
+            SUPPORTED_ALGORITHMS,
+        )
         return 2
 
     set_global_seeds(training.seed)
@@ -174,33 +180,27 @@ def main(argv: list[str] | None = None) -> int:
         )
         splits = split_episode_by_fractions(episode, train_frac=0.6, val_frac=0.2)
         training = _align_settings_to_split(training, splits)
-        if args.timesteps is None and args.model_id is None:
-            training = training.model_copy(
-                update={
-                    "total_timesteps": 256,
-                    "n_steps": 64,
-                    "batch_size": 32,
-                    "n_epochs": 1,
-                    "eval_freq": 64,
-                    "early_stopping_patience": 3,
-                    "min_evals_before_stop": 1,
-                    "model_id": "ppo-smoke-fixture",
-                }
-            )
-        elif args.timesteps is None:
-            training = training.model_copy(
-                update={
-                    "total_timesteps": 256,
-                    "n_steps": 64,
-                    "batch_size": 32,
-                    "n_epochs": 1,
-                    "eval_freq": 64,
-                    "early_stopping_patience": 3,
-                    "min_evals_before_stop": 1,
-                }
-            )
+        smoke_id = args.model_id or f"{training.algorithm}-smoke-fixture"
+        smoke_updates: dict[str, object] = {
+            "total_timesteps": args.timesteps or 256,
+            "n_steps": 64,
+            "batch_size": 32,
+            "n_epochs": 1,
+            "buffer_size": 2_000,
+            "learning_starts": 64,
+            "eval_freq": 64,
+            "early_stopping_patience": 3,
+            "min_evals_before_stop": 1,
+            "model_id": smoke_id,
+        }
+        if args.timesteps is not None:
+            smoke_updates["total_timesteps"] = args.timesteps
+        training = training.model_copy(update=smoke_updates)
         logger.info(
-            "fixture smoke episode bars=%d assets=%s", episode.n_bars, episode.symbols
+            "fixture smoke episode bars=%d assets=%s algo=%s",
+            episode.n_bars,
+            episode.symbols,
+            training.algorithm,
         )
     else:
         episode = _episode_for_configured_dates(
@@ -220,12 +220,13 @@ def main(argv: list[str] | None = None) -> int:
 
     out_dir = args.output_dir or (training.checkpoint_dir / training.model_id)
     logger.info(
-        "starting PPO training model_id=%s timesteps=%d out=%s",
+        "starting %s training model_id=%s timesteps=%d out=%s",
+        training.algorithm.upper(),
         training.model_id,
         training.total_timesteps,
         out_dir,
     )
-    result = train_ppo(
+    result = train_agent(
         splits,
         training=training,
         environment=settings.environment,
@@ -235,6 +236,7 @@ def main(argv: list[str] | None = None) -> int:
             _as_date(splits.test.timestamps[-1]),
         ),
         output_dir=out_dir,
+        algorithm=training.algorithm,
     )
     logger.info(
         "training complete out=%s best_val=%s test_report=%s selected_on=%s",
