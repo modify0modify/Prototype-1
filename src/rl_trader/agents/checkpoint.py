@@ -12,7 +12,7 @@ from datetime import date
 from pathlib import Path
 
 from rl_trader.features.engineering import FeatureSpec
-from rl_trader.validation.features import assert_features_match
+from rl_trader.validation.features import FeatureMismatchError, assert_features_match
 
 
 @dataclass(frozen=True, slots=True)
@@ -119,6 +119,9 @@ def load_checkpoint_for_features(
 ) -> CheckpointMetadata:
     """Load metadata and refuse the model if required features do not match.
 
+    When ``training_manifest.json`` is present, its feature specs must also
+    match ``required_features`` (model / feature manifest alignment).
+
     Raises
     ------
     FeatureMismatchError
@@ -126,4 +129,21 @@ def load_checkpoint_for_features(
     """
     metadata = load_checkpoint_metadata(directory)
     assert_features_match(metadata.feature_specs, required_features)
+    manifest_path = directory / "training_manifest.json"
+    if manifest_path.exists():
+        from rl_trader.agents.manifest import load_training_manifest
+
+        manifest = load_training_manifest(directory)
+        assert_features_match(manifest.feature_specs, required_features)
+        assert_features_match(manifest.feature_specs, metadata.feature_specs)
+        if manifest.scaler_fitted_on != "train":
+            raise FeatureMismatchError(
+                "incompatible checkpoint: scaler_fitted_on must be 'train' "
+                f"(got {manifest.scaler_fitted_on!r})"
+            )
+        if manifest.model_selected_on != "validation":
+            raise FeatureMismatchError(
+                "incompatible checkpoint: model_selected_on must be 'validation' "
+                f"(got {manifest.model_selected_on!r})"
+            )
     return metadata

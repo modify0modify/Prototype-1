@@ -16,12 +16,33 @@ features:
 
 training:
   algorithm: ppo
+  model_id: ppo-portfolio
   total_timesteps: 10000
   learning_rate: 0.0003
   batch_size: 64
+  n_steps: 256
+  n_epochs: 5
   gamma: 0.99
+  gae_lambda: 0.95
+  clip_range: 0.2
+  ent_coef: 0.0
+  vf_coef: 0.5
+  max_grad_norm: 0.5
   seed: 42
+  device: cpu
   checkpoint_dir: models/checkpoints
+  train_start: 2020-01-02
+  train_end: 2021-06-30
+  val_start: 2021-07-01
+  val_end: 2021-12-31
+  test_start: 2022-01-03
+  test_end: 2022-06-30
+  eval_freq: 500
+  n_eval_episodes: 1
+  early_stopping_patience: 5
+  min_evals_before_stop: 2
+  normalize_features: true
+  evaluate_test_after_training: true
 
 environment:
   initial_cash: 100000.0

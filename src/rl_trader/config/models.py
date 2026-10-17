@@ -146,17 +146,60 @@ class FeatureSettings(BaseModel):
 
 
 class TrainingSettings(BaseModel):
-    """RL training hyperparameters (research path)."""
+    """RL training hyperparameters (research path).
+
+    Date splits are inclusive calendar dates. Feature scalers are fit only on
+    the training window; validation is used for early stopping / model
+    selection; the test window is never used for fitting or selection.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
-    algorithm: str = "ppo"
+    algorithm: Literal["ppo"] = "ppo"
+    model_id: str = "ppo-portfolio"
     total_timesteps: Annotated[int, Field(ge=1)] = 10_000
     learning_rate: Annotated[float, Field(gt=0.0, le=1.0)] = 3e-4
     batch_size: Annotated[int, Field(ge=1)] = 64
+    n_steps: Annotated[int, Field(ge=1)] = 256
+    n_epochs: Annotated[int, Field(ge=1, le=100)] = 5
     gamma: Annotated[float, Field(gt=0.0, le=1.0)] = 0.99
+    gae_lambda: Annotated[float, Field(gt=0.0, le=1.0)] = 0.95
+    clip_range: Annotated[float, Field(gt=0.0, le=1.0)] = 0.2
+    ent_coef: Annotated[float, Field(ge=0.0, le=1.0)] = 0.0
+    vf_coef: Annotated[float, Field(ge=0.0, le=10.0)] = 0.5
+    max_grad_norm: Annotated[float, Field(gt=0.0)] = 0.5
     seed: Annotated[int, Field(ge=0)] = 42
+    device: str = "cpu"
     checkpoint_dir: Path = Path("models/checkpoints")
+    # Inclusive train / validation / test windows (calendar dates).
+    train_start: date = date(2020, 1, 1)
+    train_end: date = date(2021, 12, 31)
+    val_start: date = date(2022, 1, 1)
+    val_end: date = date(2022, 6, 30)
+    test_start: date = date(2022, 7, 1)
+    test_end: date = date(2022, 12, 31)
+    # Evaluation / early stopping (validation only — never test).
+    eval_freq: Annotated[int, Field(ge=1)] = 500
+    n_eval_episodes: Annotated[int, Field(ge=1)] = 1
+    early_stopping_patience: Annotated[int, Field(ge=1)] = 5
+    min_evals_before_stop: Annotated[int, Field(ge=1)] = 2
+    normalize_features: bool = True
+    # When True, run a one-shot test evaluation after training for reporting only.
+    evaluate_test_after_training: bool = True
+
+    @model_validator(mode="after")
+    def _ordered_splits(self) -> TrainingSettings:
+        if not (self.train_start <= self.train_end):
+            raise ValueError("train_start must be <= train_end")
+        if not (self.val_start <= self.val_end):
+            raise ValueError("val_start must be <= val_end")
+        if not (self.test_start <= self.test_end):
+            raise ValueError("test_start must be <= test_end")
+        if self.train_end >= self.val_start:
+            raise ValueError("train_end must be strictly before val_start")
+        if self.val_end >= self.test_start:
+            raise ValueError("val_end must be strictly before test_start")
+        return self
 
 
 class EnvironmentSettings(BaseModel):

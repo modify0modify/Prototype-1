@@ -97,3 +97,19 @@ class EpisodeData:
     def n_regime(self) -> int:
         """Regime feature width."""
         return int(self.regime_features.shape[1])
+
+    def slice_bars(self, start: int, end: int) -> EpisodeData:
+        """Return a contiguous bar slice ``[start, end)`` (end exclusive)."""
+        if start < 0 or end > self.n_bars or end - start < 2:
+            raise ValueError(
+                f"invalid slice [{start}, {end}) for n_bars={self.n_bars} "
+                "(need at least 2 bars)"
+            )
+        return EpisodeData(
+            timestamps=self.timestamps[start:end],
+            prices=self.prices[start:end],
+            market_features=self.market_features[start:end],
+            fundamental_features=self.fundamental_features[start:end],
+            regime_features=self.regime_features[start:end],
+            symbols=self.symbols,
+        )

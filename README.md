@@ -128,6 +128,19 @@ python scripts/build_features.py --config configs/research.yaml
 make build-features
 ```
 
+## PPO training (Stable-Baselines3)
+
+```bash
+python scripts/train_agent.py --config configs/research.yaml --algorithm ppo
+make train-smoke   # tiny fixture timesteps; offline
+```
+
+Scalers fit on the **training** window only; early stopping / best-model
+selection use **validation** only; the **test** set is never used for fitting
+or selection (optional post-hoc report eval only). Artifacts land under
+`models/checkpoints/<model_id>/` (weights, scaler, metadata, feature + training
+manifests, evaluation results).
+
 ## Deterministic benchmarks (pre-RL)
 
 Seven baseline strategies under `src/rl_trader/benchmarks/` share one harness:
