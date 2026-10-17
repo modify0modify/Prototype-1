@@ -231,12 +231,32 @@ class DatabaseSettings(BaseModel):
 
 
 class FundamentalValuationSettings(BaseModel):
-    """Config for fundamental valuation — terminal growth must be < WACC."""
+    """Config for fundamental DCF valuation — terminal growth must be < WACC."""
 
     model_config = ConfigDict(extra="forbid")
 
     wacc: Annotated[float, Field(gt=0.0, lt=1.0)] = 0.08
     terminal_growth_rate: Annotated[float, Field(ge=-0.5, lt=1.0)] = 0.02
+    forecast_horizon_years: Annotated[int, Field(ge=1, le=30)] = 5
+    # Explicit forecast growth path (declining): year-1 growth, then subtract decline each year
+    initial_fcff_growth: Annotated[float, Field(ge=-0.5, lt=1.0)] = 0.08
+    growth_decline_per_year: Annotated[float, Field(ge=0.0, le=0.5)] = 0.01
+    fcff_method: Literal["ebit_bridge", "ocf_capex", "auto"] = "auto"
+    # Optional annual share-count inflation for SBC / dilution (0 = none)
+    annual_share_dilution: Annotated[float, Field(ge=0.0, le=0.5)] = 0.0
+    include_short_term_investments_in_cash: bool = True
+    # Sensitivity grid half-widths around base WACC / g
+    sensitivity_wacc_deltas: tuple[float, ...] = (-0.02, -0.01, 0.0, 0.01, 0.02)
+    sensitivity_g_deltas: tuple[float, ...] = (-0.01, -0.005, 0.0, 0.005, 0.01)
+    currency: str = "USD"
+    output_dir: Path = Path("reports/valuations")
+
+    @field_validator("sensitivity_wacc_deltas", "sensitivity_g_deltas", mode="before")
+    @classmethod
+    def _tuple_floats(cls, value: object) -> object:
+        if isinstance(value, list):
+            return tuple(float(v) for v in value)
+        return value
 
     @model_validator(mode="after")
     def _growth_strictly_below_wacc(self) -> FundamentalValuationSettings:

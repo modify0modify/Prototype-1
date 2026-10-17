@@ -89,5 +89,16 @@ database:
   url: sqlite:///./reports/rl_trader.db
 
 fundamentals:
+  # DCF assumptions for research features — NOT investment advice.
   wacc: 0.08
   terminal_growth_rate: 0.02
+  forecast_horizon_years: 5
+  initial_fcff_growth: 0.08
+  growth_decline_per_year: 0.01
+  fcff_method: auto
+  annual_share_dilution: 0.0
+  include_short_term_investments_in_cash: true
+  sensitivity_wacc_deltas: [-0.02, -0.01, 0.0, 0.01, 0.02]
+  sensitivity_g_deltas: [-0.01, -0.005, 0.0, 0.005, 0.01]
+  currency: USD
+  output_dir: reports/valuations

@@ -1,0 +1,43 @@
+{
+  "disclaimer": "LABELLED SAMPLE / FIXTURE DATA ONLY. Not investment advice. Not a recommendation to buy or sell any security. Figures are synthetic for unit tests and documentation.",
+  "symbol": "EXAM",
+  "currency": "USD",
+  "statements": [
+    {
+      "symbol": "EXAM",
+      "fiscal_period_end": "2021-12-31",
+      "publication_date": "2022-02-15",
+      "currency": "USD",
+      "revenue": 1000.0,
+      "ebit": 150.0,
+      "effective_tax_rate": 0.21,
+      "depreciation_amortization": 40.0,
+      "capex": 50.0,
+      "change_in_nwc": 10.0,
+      "operating_cash_flow": 160.0,
+      "reported_free_cash_flow": 110.0,
+      "cash_and_equivalents": 80.0,
+      "short_term_investments": 20.0,
+      "debt": 200.0,
+      "diluted_shares": 50.0
+    },
+    {
+      "symbol": "EXAM",
+      "fiscal_period_end": "2022-12-31",
+      "publication_date": "2023-02-20",
+      "currency": "USD",
+      "revenue": 1100.0,
+      "ebit": 165.0,
+      "effective_tax_rate": 0.21,
+      "depreciation_amortization": 45.0,
+      "capex": 55.0,
+      "change_in_nwc": -5.0,
+      "operating_cash_flow": 180.0,
+      "reported_free_cash_flow": 125.0,
+      "cash_and_equivalents": 90.0,
+      "short_term_investments": 25.0,
+      "debt": 180.0,
+      "diluted_shares": 51.0
+    }
+  ]
+}

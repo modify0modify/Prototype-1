@@ -128,6 +128,20 @@ python scripts/build_features.py --config configs/research.yaml
 make build-features
 ```
 
+## Fundamental DCF (research features only)
+
+Annual FCFF DCF under `src/rl_trader/fundamentals/`. Supports
+`FCFF = EBIT×(1−t)+D&A−CapEx−ΔNWC` and `FCF = OCF−CapEx`, declining growth
+forecasts, WACC discounting with `g < WACC`, terminal value
+`TV = FCF_N×(1+g)/(WACC−g)`, equity bridge (cash/STI − debt), optional dilution,
+and a WACC×g sensitivity matrix.
+
+**Leakage control:** only statements with `publication_date <= as_of` are used
+(`run_dcf_asof` / feature `merge_asof`).
+
+Labelled sample (synthetic, **not investment advice**):
+`tests/fixtures/fundamentals/sample_annual.json`.
+
 ## Setup
 
 Requires Python 3.12.
