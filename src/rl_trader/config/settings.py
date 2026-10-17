@@ -19,6 +19,7 @@ from rl_trader.config.models import (
     BrokerSettings,
     DatabaseSettings,
     DataSettings,
+    EnvironmentSettings,
     FeatureSettings,
     FundamentalValuationSettings,
     LiveTradingSettings,
@@ -40,8 +41,8 @@ class RuntimeMode(StrEnum):
 class AppSettings(BaseSettings):
     """Validated root configuration.
 
-    Nested sections cover data, features, training, backtest, risk, broker,
-    monitoring, database, fundamentals, and live activation fields.
+    Nested sections cover data, features, training, environment, backtest,
+    risk, broker, monitoring, database, fundamentals, and live activation.
     """
 
     model_config = SettingsConfigDict(
@@ -61,6 +62,7 @@ class AppSettings(BaseSettings):
     data: DataSettings = Field(default_factory=DataSettings)
     features: FeatureSettings = Field(default_factory=FeatureSettings)
     training: TrainingSettings = Field(default_factory=TrainingSettings)
+    environment: EnvironmentSettings = Field(default_factory=EnvironmentSettings)
     backtest: BacktestSettings = Field(default_factory=BacktestSettings)
     risk: RiskSettings = Field(default_factory=RiskSettings)
     broker: BrokerSettings = Field(default_factory=BrokerSettings)

@@ -128,6 +128,21 @@ python scripts/build_features.py --config configs/research.yaml
 make build-features
 ```
 
+## Gymnasium portfolio environment
+
+Daily long-only portfolio env under `src/rl_trader/environment/`.
+Observation concatenates market / fundamental / regime features with cash,
+positions, recent portfolio returns, and drawdown. Actions are continuous
+target weights in `[0, max_weight]` (sum ≤ 1; residual cash). Costs cover
+commission, bid-ask spread, slippage, and a simple market-impact term.
+Reward is configurable risk-adjusted return (drawdown / turnover / cost /
+concentration / volatility penalties). Episodes terminate on data exhaustion,
+invalid NAV, max drawdown, or non-finite observations. Per-step audit logs are
+attached to `info` and `env.step_logs`.
+
+Config: `environment:` in `configs/research.yaml` and `configs/training.yaml`.
+Offline synthetic panels: `make_synthetic_episode` (tests only — not market data).
+
 ## Fundamental DCF (research features only)
 
 Annual FCFF DCF under `src/rl_trader/fundamentals/`. Supports

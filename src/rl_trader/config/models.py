@@ -159,6 +159,34 @@ class TrainingSettings(BaseModel):
     checkpoint_dir: Path = Path("models/checkpoints")
 
 
+class EnvironmentSettings(BaseModel):
+    """Gymnasium portfolio-env costs, constraints, and reward weights."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    initial_cash: Annotated[float, Field(gt=0.0)] = 100_000.0
+    # Long-only target weight cap per asset; residual is cash.
+    max_weight: Annotated[float, Field(gt=0.0, le=1.0)] = 0.25
+    # Transaction-cost model (research simulation — not a broker).
+    commission_bps: Annotated[float, Field(ge=0.0, le=1000.0)] = 1.0
+    bid_ask_spread_bps: Annotated[float, Field(ge=0.0, le=1000.0)] = 2.0
+    slippage_bps: Annotated[float, Field(ge=0.0, le=1000.0)] = 1.0
+    market_impact_coeff: Annotated[float, Field(ge=0.0, le=10.0)] = 0.1
+    # 0 = fill at decision-bar price; >0 queues target weights.
+    execution_delay_bars: Annotated[int, Field(ge=0, le=5)] = 0
+    # Observation / reward helpers
+    recent_returns_lookback: Annotated[int, Field(ge=1, le=252)] = 5
+    # Reward = return - penalties (configurable risk-adjusted).
+    drawdown_penalty: Annotated[float, Field(ge=0.0)] = 0.1
+    turnover_penalty: Annotated[float, Field(ge=0.0)] = 0.01
+    transaction_cost_penalty: Annotated[float, Field(ge=0.0)] = 1.0
+    concentration_penalty: Annotated[float, Field(ge=0.0)] = 0.0
+    volatility_penalty: Annotated[float, Field(ge=0.0)] = 0.0
+    # Safe termination thresholds
+    max_drawdown_terminate: Annotated[float, Field(gt=0.0, le=1.0)] = 0.5
+    min_portfolio_value: Annotated[float, Field(gt=0.0)] = 1.0
+
+
 class BacktestSettings(BaseModel):
     """Out-of-sample / walk-forward backtest settings."""
 
