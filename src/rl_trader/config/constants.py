@@ -19,6 +19,11 @@ SUPPORTED_TICKERS: frozenset[str] = frozenset(
         "JPM",
         "XOM",
         "JNJ",
+        "PLTR",
+        "AMD",
+        "BA",
+        "CAT",
+        "DIS",
         "SPY",
         "QQQ",
         "IWM",
@@ -26,3 +31,6 @@ SUPPORTED_TICKERS: frozenset[str] = frozenset(
         "VTI",
     }
 )
+
+# Canonical timezone for all stored daily bars (UTC midnight = trading session date).
+MARKET_DATA_TIMEZONE = "UTC"

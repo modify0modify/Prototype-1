@@ -13,6 +13,8 @@ authors = [{ name = "Quant Project" }]
 dependencies = [
   "pandas>=2.2",
   "numpy>=1.26",
+  "pyarrow>=15.0",
+  "yfinance>=0.2.40",
   "gymnasium>=0.29",
   "stable-baselines3>=2.3",
   "torch>=2.2",
@@ -63,5 +65,5 @@ disallow_untyped_defs = true
 no_implicit_optional = true
 
 [[tool.mypy.overrides]]
-module = ["gymnasium.*"]
+module = ["gymnasium.*", "yfinance.*"]
 ignore_missing_imports = true

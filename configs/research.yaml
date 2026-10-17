@@ -4,10 +4,18 @@ seed: 42
 live_trading_enabled: false
 
 data:
-  universe: [SPY, QQQ, AAPL, MSFT]
+  # SPY/QQQ benchmarks, PLTR example, plus liquid US equities
+  universe: [SPY, QQQ, PLTR, AAPL, MSFT, AMZN, META, NVDA]
+  provider: yfinance
+  timezone: UTC
+  start_date: 2023-01-03
+  end_date: 2023-03-31
   raw_dir: data/raw
   interim_dir: data/interim
   processed_dir: data/processed
+  cache_dir: data/interim/cache
+  quality_report_dir: reports/data_quality
+  jump_threshold: 0.20
   allow_missing_bars: false
 
 features:

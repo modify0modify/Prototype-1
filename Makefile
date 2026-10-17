@@ -1,9 +1,10 @@
-.PHONY: install test lint typecheck run-smoke
+.PHONY: install test lint typecheck run-smoke download-data
 
 PYTHON ?= python3.12
 VENV ?= .venv
 PIP := $(VENV)/bin/pip
 PY := $(VENV)/bin/python
+CONFIG ?= configs/research.yaml
 
 install:
 	$(PYTHON) -m venv $(VENV)
@@ -21,3 +22,6 @@ typecheck:
 
 run-smoke:
 	$(PY) -m rl_trader.cli
+
+download-data:
+	$(PY) scripts/download_data.py --config $(CONFIG)

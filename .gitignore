@@ -59,6 +59,8 @@ reports/walk_forward/*
 !reports/walk_forward/.gitkeep
 reports/paper_trading/*
 !reports/paper_trading/.gitkeep
+reports/data_quality/*
+!reports/data_quality/.gitkeep
 reports/*.db
 *.db
 *.sqlite

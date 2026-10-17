@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator, model_validator
 
-from rl_trader.config.constants import SUPPORTED_TICKERS
+from rl_trader.config.constants import MARKET_DATA_TIMEZONE, SUPPORTED_TICKERS
 from rl_trader.config.masking import mask_account_id
 
 
@@ -16,14 +17,29 @@ class DataSettings(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    universe: tuple[str, ...] = ("SPY", "QQQ")
+    universe: tuple[str, ...] = ("SPY", "QQQ", "PLTR", "AAPL", "MSFT")
+    provider: Literal["yfinance"] = "yfinance"
+    timezone: Literal["UTC"] = "UTC"
+    start_date: date | None = None
+    end_date: date | None = None
     raw_dir: Path = Path("data/raw")
     interim_dir: Path = Path("data/interim")
     processed_dir: Path = Path("data/processed")
     external_dir: Path = Path("data/external")
+    cache_dir: Path = Path("data/interim/cache")
+    quality_report_dir: Path = Path("reports/data_quality")
+    # Absolute day-over-day close return above this fraction is flagged (not filled).
+    jump_threshold: Annotated[float, Field(gt=0.0, le=1.0)] = 0.20
     api_key: SecretStr | None = None
     api_secret: SecretStr | None = None
     allow_missing_bars: bool = False  # silent fills are never allowed when False
+
+    @field_validator("timezone")
+    @classmethod
+    def _timezone_must_match_canonical(cls, value: str) -> str:
+        if value != MARKET_DATA_TIMEZONE:
+            raise ValueError(f"timezone must be {MARKET_DATA_TIMEZONE!r} (got {value!r})")
+        return value
 
     @field_validator("universe", mode="before")
     @classmethod

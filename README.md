@@ -86,6 +86,31 @@ Enforced by:
 2. Runtime caller checks in the live modules (`guard_live_import`)
 3. Package `__init__` files that do not re-export live adapters
 
+## Market data pipeline (daily OHLCV)
+
+Provider interface: `MarketDataProvider` (`src/rl_trader/data/provider.py`). Initial
+implementation: **yfinance** (`YFinanceProvider`) — swap providers in
+`get_provider()` without changing downstream modules.
+
+| Artifact | Path |
+|----------|------|
+| Cache | `data/interim/cache/` |
+| Raw (immutable) | `data/raw/{provider}/` |
+| Cleaned | `data/processed/ohlcv/` |
+| Quality reports | `reports/data_quality/` |
+
+**Timezone:** all stored bars use **UTC** (midnight UTC = trading session calendar date).
+
+**Adjusted prices:** raw keeps provider `Close` + `Adj Close` unchanged. Cleaned adds
+`adjustment_factor = Adj Close / Close` and scaled `open_adj`/`high_adj`/`low_adj`/
+`close_adj`. Volume is not split-adjusted. **Missing dates are never interpolated.**
+
+```bash
+python scripts/download_data.py --config configs/research.yaml
+# or
+make download-data
+```
+
 ## Setup
 
 Requires Python 3.12.
