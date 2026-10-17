@@ -57,8 +57,46 @@ Defined as `rl_trader.config.LIVE_TRADING_CONFIRMATION_PHRASE`.
 10. Explicit `risk.daily_loss_limit`
 
 If any gate fails, the process raises `LiveTradingBlockedError` and **must not** open a live
-broker connection. The live broker adapter remains a stub — these gates do **not** enable
-unsupervised live trading.
+broker connection. These gates do **not** enable unsupervised live trading.
+
+## Live trading (disabled by default)
+
+`configs/live.yaml` is a **disabled** template. Defaults: `live_trading_enabled: false`,
+`rollout_stage: 0`, `manual_activated: false`. The live adapter
+(`src/rl_trader/brokers/live.py`) implements the same `BrokerAdapter` interface as
+`PaperBroker` but is a gated **sandbox/stub** — no real broker HTTP calls.
+
+### Safety layers
+
+Separate live credentials · explicit live-mode config · live-tier approved manifest ·
+approved account allowlist · max live capital · max order notional · strict position
+caps · daily loss limit · drawdown limit · stale-data rejection · market-hours check ·
+account reconciliation · duplicate-order prevention · global kill switch · manual
+activation · manual deactivation · paper/live order-routing separation
+(`live_trading.OrderRouter`).
+
+### Rollout stages (config-driven)
+
+| Stage | Behaviour |
+|------:|-----------|
+| 0 | **Default.** Shadow decisions only — never submits live orders |
+| 1 | Tiny fixed capital, long-only (EXAMPLE `stage1_capital_limit`) |
+| 2 | Higher capital **only after** `stage2_review_acknowledged` (human/config) |
+| 3 | Expanded universe **only after** stage-3 review + `stage3_expanded_universe` |
+
+The system **never** auto-increases capital (`CapitalLimitGuard.propose_increase` always
+raises). Stage advances and capital changes require human-reviewed config reload.
+
+### Manual arming
+
+Even with complete safety config, submits require `ManualLiveController.activate()` with
+the confirmation phrase. `deactivate()` disarms immediately.
+
+### Agent isolation
+
+RL agents must not modify risk limits, approval status, broker credentials, capital
+limits, operating mode, or kill-switch status. Live paths ignore agent control overrides
+(`ignore_agent_control_attempt`); static scans enforce agents do not write those attrs.
 
 ## Formal model approval
 
@@ -292,6 +330,7 @@ State under `reports/paper_trading/` (`heartbeat.json`, `decisions.jsonl`, lock 
 | `execution` | paper executor (live executor gated, not re-exported) |
 | `paper_trading` | prospective paper service loop (lock, heartbeat, decisions) |
 | `approval` | hashed manifests + configurable paper/live gates |
+| `live_trading` | stages, manual arming, capital guard, routing (not research) |
 | `risk` | deterministic approve / reject / resize |
 | `brokers` | shared `BrokerAdapter`; persistent `PaperBroker` sim; live stub only |
 | `monitoring` | logging, audit, Streamlit dashboard (read-only) |

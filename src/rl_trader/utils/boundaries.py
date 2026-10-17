@@ -25,6 +25,7 @@ FORBIDDEN_LIVE_MODULES: frozenset[str] = frozenset(
     {
         "rl_trader.brokers.live",
         "rl_trader.execution.live",
+        "rl_trader.live_trading",
     }
 )
 

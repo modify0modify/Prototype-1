@@ -67,6 +67,9 @@ def _live_base(tmp_path: Path, **overrides: object) -> AppSettings:
             max_live_capital=25_000.0,
             max_order_value=1_000.0,
             approved_model_manifest=manifest,
+            approved_account_allowlist=("LIVEACCT123456",),
+            rollout_stage=0,
+            manual_activated=False,
         ),
     }
     kwargs.update(overrides)

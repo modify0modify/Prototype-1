@@ -556,6 +556,10 @@ class FundamentalValuationSettings(BaseModel):
 class LiveTradingSettings(BaseModel):
     """Live-only activation fields (ignored unless app_mode=live).
 
+    Defaults keep live **disabled**. Rollout stage defaults to 0 (shadow only).
+    Capital ceilings are EXAMPLE illustrations — humans set them in config; the
+    system must never raise them programmatically.
+
     Account identifiers are masked in ``repr`` / safe logging helpers.
     """
 
@@ -567,6 +571,44 @@ class LiveTradingSettings(BaseModel):
     max_order_value: Annotated[float, Field(gt=0.0)] | None = None
     approved_model_manifest: Path = Path("models/approved/manifest.json")
 
+    # --- Rollout stage (config-driven; default Stage 0 = no live orders) ---
+    # 0: shadow decisions only
+    # 1: tiny fixed capital, long-only (EXAMPLE capital below)
+    # 2: gradual capital increase only after completed human/config review
+    # 3: expanded ticker universe only after additional review
+    rollout_stage: Annotated[int, Field(ge=0, le=3)] = 0
+
+    # Approved account allowlist — account_id must be listed.
+    approved_account_allowlist: tuple[str, ...] = ()
+
+    # Manual runtime arming (separate from config completeness).
+    # activate()/deactivate() on ManualLiveController flips this via config copy.
+    manual_activated: bool = False
+
+    # EXAMPLE stage capital ceilings (human-configured only — never auto-raised).
+    # Stage 1 EXAMPLE tiny capital when max_live_capital is unset for that stage.
+    stage1_capital_limit: Annotated[float, Field(gt=0.0)] | None = 1_000.0  # EXAMPLE
+    stage2_capital_limit: Annotated[float, Field(gt=0.0)] | None = 5_000.0  # EXAMPLE
+    stage3_capital_limit: Annotated[float, Field(gt=0.0)] | None = 25_000.0  # EXAMPLE
+
+    # Human/config review acknowledgements required before stages 2 and 3.
+    stage2_review_acknowledged: bool = False
+    stage3_review_acknowledged: bool = False
+    # Stage 3 expanded universe (empty = not reviewed / not allowed).
+    stage3_expanded_universe: tuple[str, ...] = ()
+
+    # Stage 1+ policy: long-only (shorts blocked).
+    long_only: bool = True
+    # Safety toggles (defaults strict).
+    require_market_hours: bool = True
+    require_account_reconciliation: bool = True
+    # EXAMPLE stale-data threshold (seconds).
+    max_data_age_seconds: Annotated[float, Field(gt=0.0, le=86_400.0)] = 60.0
+    # Strict position cap as fraction of equity (EXAMPLE).
+    max_position_fraction: Annotated[float, Field(gt=0.0, le=1.0)] = 0.10  # EXAMPLE
+    # Shadow decision log directory (Stage 0 / dry path).
+    shadow_state_dir: Path = Path("reports/live_trading/shadow")
+
     def __repr__(self) -> str:
         return (
             "LiveTradingSettings("
@@ -574,5 +616,7 @@ class LiveTradingSettings(BaseModel):
             f"account_id={mask_account_id(self.account_id)!r}, "
             f"max_live_capital={self.max_live_capital!r}, "
             f"max_order_value={self.max_order_value!r}, "
+            f"rollout_stage={self.rollout_stage}, "
+            f"manual_activated={self.manual_activated}, "
             f"approved_model_manifest={self.approved_model_manifest!r})"
         )

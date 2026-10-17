@@ -1,5 +1,7 @@
-# Live-mode template. Live routing stays blocked until ALL gates pass.
-# Do not set live_trading_enabled: true without acknowledgement + risk approval.
+# Live-mode template — DISABLED by default.
+# Do NOT set live_trading_enabled: true without completing every safety layer.
+# Even when fully configured, Stage 0 (default) never submits live orders
+# (shadow decisions only). No real broker API calls are made by the sandbox adapter.
 app_mode: live
 seed: 42
 live_trading_enabled: false
@@ -7,20 +9,27 @@ live_trading_enabled: false
 data:
   universe: [SPY, QQQ]
   processed_dir: data/processed
+  # Paper/live must acknowledge survivorship bias or use a PIT universe.
+  survivorship_bias_acknowledged: false
+  point_in_time_universe: false
 
 features:
   lookback_bars: 20
   causal_only: true
 
 risk:
+  # EXAMPLE thresholds — override for your risk appetite (not advice).
   max_position_size: 0.1
   max_portfolio_exposure: 0.5
   daily_loss_limit: 0.02
   max_drawdown_limit: 0.1
+  kill_switch_reset_phrase: MANUAL_KILL_SWITCH_RESET
 
-# Live credentials / environment must come from env for real activation.
+# Live credentials must come from env (BROKER__LIVE_API_KEY / nested).
+# Never reuse paper keys for live. Paper credential fields are ignored by LiveBroker.
 broker:
   environment: live
+  # live_api_key / live_api_secret: set via environment only
 
 monitoring:
   log_level: INFO
@@ -33,11 +42,47 @@ fundamentals:
   wacc: 0.08
   terminal_growth_rate: 0.02
 
+# Formal approval — live tier required. Thresholds are EXAMPLE defaults.
+approval:
+  require_manifest_signature: false
+  persist_approvals: true
+
 live:
-  # Must equal LIVE_TRADING_CONFIRMATION_PHRASE exactly when enabling live:
+  # Must equal LIVE_TRADING_CONFIRMATION_PHRASE exactly when enabling:
   # I_UNDERSTAND_THIS_ENABLES_LIVE_BROKER_ORDERS
   acknowledgement: ""
   account_id: ""
+  # EXAMPLE capital / order ceilings — human-set only; never auto-increased.
   max_live_capital: null
   max_order_value: null
   approved_model_manifest: models/approved/manifest.json
+
+  # Rollout stage (config-driven). Default 0 = shadow only — no live orders.
+  # 0: shadow decisions only
+  # 1: tiny fixed capital, long-only (requires human capital config)
+  # 2: capital increase only after stage2_review_acknowledged (human/config)
+  # 3: expanded universe only after stage3_review_acknowledged + universe list
+  rollout_stage: 0
+
+  # Account must appear on this allowlist.
+  approved_account_allowlist: []
+
+  # Manual runtime arming — remains false until ManualLiveController.activate().
+  manual_activated: false
+
+  # EXAMPLE stage capital ceilings (illustrations only).
+  stage1_capital_limit: 1000.0
+  stage2_capital_limit: 5000.0
+  stage3_capital_limit: 25000.0
+  stage2_review_acknowledged: false
+  stage3_review_acknowledged: false
+  stage3_expanded_universe: []
+
+  long_only: true
+  require_market_hours: true
+  require_account_reconciliation: true
+  # EXAMPLE stale-data threshold (seconds).
+  max_data_age_seconds: 60.0
+  # EXAMPLE strict position cap (fraction of equity).
+  max_position_fraction: 0.10
+  shadow_state_dir: reports/live_trading/shadow
