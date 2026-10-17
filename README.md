@@ -135,6 +135,19 @@ python scripts/train_agent.py --config configs/research.yaml --algorithm ppo
 python scripts/train_agent.py --config configs/research.yaml --algorithm sac --fixture
 make train-smoke ALGORITHM=td3
 make compare-agents   # smoke compare + random-policy control → reports/agent_comparison/
+make walk-forward-smoke   # synthetic walk-forward (no train) → reports/walk_forward/
+```
+
+### Walk-forward validation
+
+Rolling train → val → test windows with **no test leakage**, per-fold scaler fit,
+benchmark harness (shared cost model), turnover/costs, regime breakdown,
+dispersion + instability flags. Artifacts: `fold_summary.csv`, trade logs,
+equity/drawdown charts, aggregate + stability reports under `reports/walk_forward/`.
+
+```bash
+python scripts/run_walk_forward.py --config configs/research.yaml --fixture --no-train
+make walk-forward-smoke
 ```
 
 Common `SB3PortfolioAgent` interface; continuous long/cash `Box` actions for all

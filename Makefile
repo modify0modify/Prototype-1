@@ -1,4 +1,4 @@
-.PHONY: install test lint typecheck run-smoke download-data build-features run-benchmarks train-agent train-smoke compare-agents
+.PHONY: install test lint typecheck run-smoke download-data build-features run-benchmarks train-agent train-smoke compare-agents walk-forward walk-forward-smoke
 
 PYTHON ?= python3.12
 VENV ?= .venv
@@ -41,3 +41,9 @@ train-smoke:
 
 compare-agents:
 	$(PY) scripts/compare_agents.py --config $(CONFIG) --fixture
+
+walk-forward:
+	$(PY) scripts/run_walk_forward.py --config $(CONFIG)
+
+walk-forward-smoke:
+	$(PY) scripts/run_walk_forward.py --config $(CONFIG) --fixture --no-train

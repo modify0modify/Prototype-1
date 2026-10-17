@@ -118,7 +118,24 @@ backtest:
   commission_bps: 1.0
   slippage_bps: 1.0
   reports_dir: reports/backtests
+  walk_forward_dir: reports/walk_forward
   walk_forward_folds: 3
+  train_bars: 40
+  val_bars: 10
+  test_bars: 10
+  step_bars: 10
+  window_mode: rolling
+  retrain_mode: scratch
+  max_dd_threshold: 0.20
+  instability_sharpe_mad_mult: 3.0
+  instability_return_mad_mult: 3.0
+  underperform_eps: 0.0
+  algorithm: ppo
+  train_timesteps: 256
+  train_agent: true
+  regime_feature_index: 0
+  n_regime_buckets: 3
+  trading_days_per_year: 252
 
 # Deterministic baselines (shared harness; costs from environment: by default).
 benchmarks:

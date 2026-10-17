@@ -243,7 +243,13 @@ class EnvironmentSettings(BaseModel):
 
 
 class BacktestSettings(BaseModel):
-    """Out-of-sample / walk-forward backtest settings."""
+    """Out-of-sample / walk-forward backtest settings.
+
+    Walk-forward windows are measured in bars. Test periods of successive folds
+    do not overlap when ``step_bars >= test_bars`` (enforced for combined
+    return aggregation). Scalers are fit independently on each fold's train
+    window.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
@@ -251,7 +257,36 @@ class BacktestSettings(BaseModel):
     commission_bps: Annotated[float, Field(ge=0.0, le=1000.0)] = 1.0
     slippage_bps: Annotated[float, Field(ge=0.0, le=1000.0)] = 1.0
     reports_dir: Path = Path("reports/backtests")
+    walk_forward_dir: Path = Path("reports/walk_forward")
+    # Legacy / soft cap on number of folds (geometry may produce fewer).
     walk_forward_folds: Annotated[int, Field(ge=1, le=100)] = 3
+    train_bars: Annotated[int, Field(ge=4)] = 40
+    val_bars: Annotated[int, Field(ge=2)] = 10
+    test_bars: Annotated[int, Field(ge=2)] = 10
+    step_bars: Annotated[int, Field(ge=1)] = 10
+    window_mode: Literal["rolling", "expanding"] = "rolling"
+    retrain_mode: Literal["scratch", "fine_tune"] = "scratch"
+    max_dd_threshold: Annotated[float, Field(gt=0.0, le=1.0)] = 0.20
+    # Fold marked unstable when |sharpe - median| > mult * MAD (or MAD floor).
+    instability_sharpe_mad_mult: Annotated[float, Field(gt=0.0)] = 3.0
+    instability_return_mad_mult: Annotated[float, Field(gt=0.0)] = 3.0
+    underperform_eps: Annotated[float, Field(ge=0.0)] = 0.0
+    algorithm: Literal["ppo", "sac", "td3"] = "ppo"
+    train_timesteps: Annotated[int, Field(ge=1)] = 256
+    # When False, evaluate a deterministic equal-weight agent (fast CI / unit tests).
+    train_agent: bool = True
+    regime_feature_index: Annotated[int, Field(ge=0)] = 0
+    n_regime_buckets: Annotated[int, Field(ge=2, le=10)] = 3
+    trading_days_per_year: Annotated[int, Field(ge=1, le=366)] = 252
+
+    @model_validator(mode="after")
+    def _walk_forward_geometry(self) -> BacktestSettings:
+        if self.step_bars < self.test_bars:
+            raise ValueError(
+                "step_bars must be >= test_bars so successive test windows do not "
+                f"overlap (got step_bars={self.step_bars}, test_bars={self.test_bars})"
+            )
+        return self
 
 
 class BenchmarkSettings(BaseModel):

@@ -1,43 +1,30 @@
-"""Walk-forward validation stubs (research)."""
+"""Walk-forward validation public API (geometry + runner)."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import date
 
+from rl_trader.validation.runner import WalkForwardRunResult, run_walk_forward
+from rl_trader.validation.windows import (
+    WalkForwardFold,
+    WalkForwardPlan,
+    build_walk_forward_plan,
+    build_walk_forward_plan_dates,
+    slice_fold_episodes,
+)
 
-@dataclass(frozen=True, slots=True)
-class WalkForwardFold:
-    """Single walk-forward train/test split."""
-
-    train_start: date
-    train_end: date
-    test_start: date
-    test_end: date
-
-
-@dataclass(frozen=True, slots=True)
-class WalkForwardPlan:
-    """Ordered list of expanding or rolling folds."""
-
-    folds: tuple[WalkForwardFold, ...]
+__all__ = [
+    "WalkForwardFold",
+    "WalkForwardPlan",
+    "WalkForwardRunResult",
+    "build_walk_forward_plan",
+    "build_walk_forward_plan_dates",
+    "run_walk_forward",
+    "slice_fold_episodes",
+]
 
 
-def build_walk_forward_plan(
-    start: date,
-    end: date,
-    *,
-    n_folds: int = 3,
-) -> WalkForwardPlan:
-    """Build a placeholder walk-forward plan (stub geometry)."""
-    if n_folds < 1:
-        raise ValueError("n_folds must be >= 1")
-    if end <= start:
-        raise ValueError("end must be after start")
-    fold = WalkForwardFold(
-        train_start=start,
-        train_end=start,
-        test_start=start,
-        test_end=end,
-    )
-    return WalkForwardPlan(folds=tuple([fold] * n_folds))
+# Keep date-only helper name used by the legacy script.
+def build_stub_plan(start: date, end: date, *, n_folds: int = 3) -> WalkForwardPlan:
+    """Compatibility wrapper around date-based plan builder."""
+    return build_walk_forward_plan_dates(start, end, n_folds=n_folds)
