@@ -1,14 +1,18 @@
-"""Benchmark strategies for backtest comparison (research)."""
+"""Legacy benchmark shims — prefer :mod:`rl_trader.benchmarks`."""
 
 from __future__ import annotations
 
 import numpy as np
 
+from rl_trader.benchmarks.strategies import (
+    BuyAndHoldSpyStrategy,
+    EqualWeightBuyAndHoldStrategy,
+)
 from rl_trader.portfolio.targets import TargetPortfolio
 
 
 class EqualWeightBenchmark:
-    """Always allocate equally across assets."""
+    """Always allocate equally across assets (legacy agent-style API)."""
 
     name = "equal_weight"
 
@@ -16,6 +20,11 @@ class EqualWeightBenchmark:
         if n_assets < 1:
             raise ValueError("n_assets must be >= 1")
         self.n_assets = n_assets
+        self._inner = EqualWeightBuyAndHoldStrategy()
+        # prepare with flat prices so target_weights can run in agent-style mode
+        flat = np.ones((2, n_assets), dtype=np.float64)
+        symbols = tuple(f"A{i}" for i in range(n_assets))
+        self._inner.prepare(flat, symbols)
 
     def predict_target(self, observation: np.ndarray) -> TargetPortfolio:
         """Uniform weights."""
@@ -36,6 +45,7 @@ class BuyAndHoldBenchmark:
             self.weights = w
         else:
             self.weights = np.asarray(weights, dtype=np.float64)
+        self._spy = BuyAndHoldSpyStrategy(spy_symbol="A0")
 
     def predict_target(self, observation: np.ndarray) -> TargetPortfolio:
         """Return the static allocation."""

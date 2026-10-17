@@ -33,12 +33,17 @@ def simulate_rebalance(
     prices: np.ndarray,
     target_weights: np.ndarray,
     settings: EnvironmentSettings,
+    enforce_max_weight: bool = True,
 ) -> SimulatedFill:
     """Rebalance toward ``target_weights`` at ``prices`` with cash constraints.
 
     Long + cash only. Buys that would overdraw cash (after estimated costs) are
     scaled down proportionately. Fully rejected trades leave the portfolio
     unchanged when prices are invalid or NAV is non-positive.
+
+    When ``enforce_max_weight`` is False (buy-and-hold baselines), per-asset
+    caps are not re-applied so appreciated holdings can drift above
+    ``settings.max_weight``.
     """
     shares = np.asarray(shares, dtype=np.float64).copy()
     prices = np.asarray(prices, dtype=np.float64)
@@ -81,7 +86,10 @@ def simulate_rebalance(
         )
 
     # Cap single-name weight again for safety (also enforced in action projection).
-    capped = np.clip(target_weights, 0.0, settings.max_weight)
+    if enforce_max_weight:
+        capped = np.clip(target_weights, 0.0, settings.max_weight)
+    else:
+        capped = np.maximum(np.asarray(target_weights, dtype=np.float64), 0.0)
     if float(np.sum(capped)) > 1.0:
         capped = capped / float(np.sum(capped))
 

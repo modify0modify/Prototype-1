@@ -11,12 +11,34 @@ features:
   lookback_bars: 20
   causal_only: true
 
+environment:
+  initial_cash: 100000.0
+  max_weight: 0.25
+  commission_bps: 1.0
+  bid_ask_spread_bps: 2.0
+  slippage_bps: 2.0
+  market_impact_coeff: 0.1
+  execution_delay_bars: 0
+
 backtest:
   initial_cash: 100000.0
   commission_bps: 1.0
   slippage_bps: 2.0
   reports_dir: reports/backtests
   walk_forward_folds: 5
+
+benchmarks:
+  spy_symbol: SPY
+  ma_window: 50
+  momentum_lookback: 20
+  momentum_top_k: 2
+  mean_reversion_lookback: 5
+  mean_reversion_z: 1.0
+  vol_lookback: 20
+  risk_parity_vol_floor: 0.000001
+  trading_days_per_year: 252
+  output_dir: reports/benchmarks
+  use_environment_costs: true
 
 risk:
   max_position_size: 0.2

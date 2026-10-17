@@ -16,6 +16,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from rl_trader.config.models import (
     BacktestSettings,
+    BenchmarkSettings,
     BrokerSettings,
     DatabaseSettings,
     DataSettings,
@@ -42,7 +43,8 @@ class AppSettings(BaseSettings):
     """Validated root configuration.
 
     Nested sections cover data, features, training, environment, backtest,
-    risk, broker, monitoring, database, fundamentals, and live activation.
+    benchmarks, risk, broker, monitoring, database, fundamentals, and live
+    activation.
     """
 
     model_config = SettingsConfigDict(
@@ -64,6 +66,7 @@ class AppSettings(BaseSettings):
     training: TrainingSettings = Field(default_factory=TrainingSettings)
     environment: EnvironmentSettings = Field(default_factory=EnvironmentSettings)
     backtest: BacktestSettings = Field(default_factory=BacktestSettings)
+    benchmarks: BenchmarkSettings = Field(default_factory=BenchmarkSettings)
     risk: RiskSettings = Field(default_factory=RiskSettings)
     broker: BrokerSettings = Field(default_factory=BrokerSettings)
     monitoring: MonitoringSettings = Field(default_factory=MonitoringSettings)

@@ -128,6 +128,23 @@ python scripts/build_features.py --config configs/research.yaml
 make build-features
 ```
 
+## Deterministic benchmarks (pre-RL)
+
+Seven baseline strategies under `src/rl_trader/benchmarks/` share one harness:
+same panel, dates, starting capital, long+cash `max_weight` rules, and the
+portfolio-env cost/execution simulator (`simulate_rebalance`).
+
+```bash
+make run-benchmarks
+# → reports/benchmarks/latest.md (+ JSON)
+```
+
+Strategies: cash-only, buy-and-hold SPY, equal-weight buy-and-hold, MA trend,
+cross-sectional momentum, mean-reversion, inverse-volatility. Config knobs live
+under `benchmarks:` in `configs/research.yaml` / `configs/backtest.yaml`.
+**No RL training** is started by these scripts. Baselines are research tools —
+not investment advice.
+
 ## Gymnasium portfolio environment
 
 Daily long-only portfolio env under `src/rl_trader/environment/`.
@@ -201,7 +218,8 @@ make run-smoke
 | `fundamentals` | point-in-time fundamental data stubs |
 | `environment` | Gymnasium portfolio env |
 | `agents` | RL agents + checkpoint metadata (features + training period) |
-| `backtesting` | OOS metrics + benchmarks |
+| `backtesting` | OOS helpers (thin wrappers) |
+| `benchmarks` | deterministic baseline strategies + shared harness |
 | `validation` | feature-match checks + walk-forward plans |
 | `portfolio` | target portfolio types |
 | `execution` | paper executor (live executor gated, not re-exported) |

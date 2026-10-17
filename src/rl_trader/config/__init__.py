@@ -15,6 +15,7 @@ from rl_trader.config.live_gates import (
 from rl_trader.config.masking import mask_account_id, redact_secret
 from rl_trader.config.models import (
     BacktestSettings,
+    BenchmarkSettings,
     BrokerSettings,
     DatabaseSettings,
     DataSettings,
@@ -40,6 +41,7 @@ __all__ = [
     "ActivationReport",
     "AppSettings",
     "BacktestSettings",
+    "BenchmarkSettings",
     "BrokerSettings",
     "DataSettings",
     "DatabaseSettings",

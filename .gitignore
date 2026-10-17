@@ -65,6 +65,8 @@ reports/feature_quality/*
 !reports/feature_quality/.gitkeep
 reports/valuations/*
 !reports/valuations/.gitkeep
+reports/benchmarks/*
+!reports/benchmarks/.gitkeep
 reports/*.db
 *.db
 *.sqlite

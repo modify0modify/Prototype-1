@@ -199,6 +199,25 @@ class BacktestSettings(BaseModel):
     walk_forward_folds: Annotated[int, Field(ge=1, le=100)] = 3
 
 
+class BenchmarkSettings(BaseModel):
+    """Deterministic baseline strategy knobs (shared harness with env costs)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    spy_symbol: str = "SPY"
+    ma_window: Annotated[int, Field(ge=2, le=500)] = 50
+    momentum_lookback: Annotated[int, Field(ge=2, le=500)] = 20
+    momentum_top_k: Annotated[int, Field(ge=1, le=50)] = 3
+    mean_reversion_lookback: Annotated[int, Field(ge=2, le=120)] = 5
+    mean_reversion_z: Annotated[float, Field(gt=0.0, le=10.0)] = 1.0
+    vol_lookback: Annotated[int, Field(ge=5, le=500)] = 20
+    risk_parity_vol_floor: Annotated[float, Field(gt=0.0, le=1.0)] = 1e-6
+    trading_days_per_year: Annotated[int, Field(ge=1, le=366)] = 252
+    output_dir: Path = Path("reports/benchmarks")
+    # When True, reuse environment.* cost fields so baselines match the RL env.
+    use_environment_costs: bool = True
+
+
 class RiskSettings(BaseModel):
     """Deterministic risk-engine limits.
 

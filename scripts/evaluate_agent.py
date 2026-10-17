@@ -29,9 +29,9 @@ def main() -> int:
 
     result = evaluate_equity_curve(None)
     logger.info(
-        "evaluate_agent stub model_id=%s notes=%s",
+        "evaluate_agent stub model_id=%s strategy=%s (no RL training)",
         metadata.model_id,
-        result.notes,
+        result.strategy,
     )
     return 0
 

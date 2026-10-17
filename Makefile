@@ -1,4 +1,4 @@
-.PHONY: install test lint typecheck run-smoke download-data build-features
+.PHONY: install test lint typecheck run-smoke download-data build-features run-benchmarks
 
 PYTHON ?= python3.12
 VENV ?= .venv
@@ -28,3 +28,6 @@ download-data:
 
 build-features:
 	$(PY) scripts/build_features.py --config $(CONFIG)
+
+run-benchmarks:
+	$(PY) scripts/run_benchmarks.py --config $(CONFIG)

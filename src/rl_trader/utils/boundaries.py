@@ -9,8 +9,8 @@ Modules under the *research surface* must never import:
 
 Research surface packages:
 ``config``, ``data``, ``features``, ``fundamentals``, ``environment``,
-``agents``, ``backtesting``, ``validation``, ``portfolio``, ``risk``,
-``monitoring``, ``storage``, ``utils``.
+``agents``, ``backtesting``, ``benchmarks``, ``validation``, ``portfolio``,
+``risk``, ``monitoring``, ``storage``, ``utils``.
 
 Broker adapters live behind :mod:`rl_trader.brokers.base`. Paper adapters are
 allowed from orchestration scripts; live adapters are only for live runners.
@@ -37,6 +37,7 @@ RESEARCH_PACKAGES: frozenset[str] = frozenset(
         "environment",
         "agents",
         "backtesting",
+        "benchmarks",
         "validation",
         "portfolio",
         "risk",
