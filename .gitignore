@@ -52,6 +52,7 @@ models/checkpoints/*
 !models/checkpoints/.gitkeep
 models/approved/*
 !models/approved/.gitkeep
+!models/approved/*.example.json
 reports/backtests/*
 !reports/backtests/.gitkeep
 reports/walk_forward/*
