@@ -12,7 +12,7 @@ from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from rl_trader.agents.random_control import RandomControlResult, evaluate_random_policy
 from rl_trader.agents.registry import SUPPORTED_ALGORITHMS, AlgorithmName
