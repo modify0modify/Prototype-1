@@ -1,4 +1,4 @@
-"""Monitoring: structured logging and audit trails."""
+"""Monitoring: structured logging, audit trails, and the Streamlit dashboard."""
 
 from rl_trader.monitoring.audit import AuditEvent, AuditRecorder
 from rl_trader.monitoring.logging import configure_logging, get_logger

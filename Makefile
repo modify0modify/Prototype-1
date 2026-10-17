@@ -1,4 +1,4 @@
-.PHONY: install test lint typecheck run-smoke download-data build-features run-benchmarks train-agent train-smoke compare-agents walk-forward walk-forward-smoke run-paper run-paper-dry migrate db-upgrade db-current db-export
+.PHONY: install test lint typecheck run-smoke download-data build-features run-benchmarks train-agent train-smoke compare-agents walk-forward walk-forward-smoke run-paper run-paper-dry migrate db-upgrade db-current db-export dashboard
 
 PYTHON ?= python3.12
 VENV ?= .venv
@@ -65,3 +65,6 @@ db-current:
 
 db-export:
 	DATABASE_URL=$(DATABASE_URL) $(PY) scripts/export_db_csv.py --output-dir $(EXPORT_DIR)
+
+dashboard:
+	$(PY) scripts/run_dashboard.py --host 127.0.0.1 --port 8505

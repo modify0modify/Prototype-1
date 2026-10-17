@@ -269,9 +269,19 @@ State under `reports/paper_trading/` (`heartbeat.json`, `decisions.jsonl`, lock 
 | `paper_trading` | prospective paper service loop (lock, heartbeat, decisions) |
 | `risk` | deterministic approve / reject / resize |
 | `brokers` | shared `BrokerAdapter`; persistent `PaperBroker` sim; live stub only |
-| `monitoring` | structured logging + audit recorder |
+| `monitoring` | logging, audit, Streamlit dashboard (read-only) |
 | `storage` | SQLAlchemy / SQLite + Alembic migrations (no secrets) |
 | `utils` | seeds + import-boundary helpers |
+
+## Monitoring dashboard
+
+```bash
+make dashboard
+# or: python scripts/run_dashboard.py --port 8505
+```
+
+Read-only Streamlit UI over paper ledgers, walk-forward / comparison reports, and
+SQLite storage. Results are labelled **simulated**; live activation is disabled.
 
 ## Database
 
