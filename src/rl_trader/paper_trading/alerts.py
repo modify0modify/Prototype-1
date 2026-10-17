@@ -45,8 +45,10 @@ class AlertSink:
             context=dict(context or {}),
         )
         self.events.append(alert)
-        log_fn = self.logger.error if level.lower() in {"error", "critical"} else self.logger.warning
-        log_fn("%s | %s", message, alert.context)
+        if level.lower() in {"error", "critical"}:
+            self.logger.error("%s | %s", message, alert.context)
+        else:
+            self.logger.warning("%s | %s", message, alert.context)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.path.open("a", encoding="utf-8") as fh:
             fh.write(
