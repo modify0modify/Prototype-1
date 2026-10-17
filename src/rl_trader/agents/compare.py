@@ -12,7 +12,7 @@ from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 from rl_trader.agents.random_control import RandomControlResult, evaluate_random_policy
 from rl_trader.agents.registry import SUPPORTED_ALGORITHMS, AlgorithmName
@@ -97,9 +97,14 @@ def compare_algorithms(
     else:
         for raw in algorithms:
             key = raw.lower().strip()
-            if key not in SUPPORTED_ALGORITHMS:
+            if key == "ppo":
+                algos_list.append("ppo")
+            elif key == "sac":
+                algos_list.append("sac")
+            elif key == "td3":
+                algos_list.append("td3")
+            else:
                 raise ValueError(f"unsupported algorithm {raw!r}")
-            algos_list.append(cast(AlgorithmName, key))
     algos = tuple(algos_list)
 
     out_root = Path(output_dir or training.comparison_dir)
