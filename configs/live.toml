@@ -1,5 +1,0 @@
-# Live-mode template. Live routing stays blocked until multi-check activation.
-# Do not set live_trading_enabled=true without risk approval + activation token.
-mode = "live"
-seed = 42
-live_trading_enabled = false

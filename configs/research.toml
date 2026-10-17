@@ -1,4 +1,0 @@
-# Research-mode defaults (offline experiments). No broker contact.
-mode = "research"
-seed = 42
-live_trading_enabled = false

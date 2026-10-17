@@ -1,0 +1,12 @@
+# Live-mode template. Live routing stays blocked until multi-check activation.
+# Do not set live_trading_enabled: true without risk approval + activation token.
+mode: live
+seed: 42
+live_trading_enabled: false
+
+paths:
+  approved_models: models/approved
+  reports: reports/paper_trading
+
+# Live credentials come from RL_TRADER_LIVE_BROKER_* env vars only (never paper keys).
+broker_profile: live

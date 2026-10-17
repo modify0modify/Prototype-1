@@ -1,0 +1,13 @@
+# Paper-mode defaults (simulated execution). Default production-safe path.
+mode: paper
+seed: 42
+live_trading_enabled: false
+
+paths:
+  raw_data: data/raw
+  processed_data: data/processed
+  approved_models: models/approved
+  reports: reports/paper_trading
+
+# Paper credentials come from RL_TRADER_PAPER_BROKER_* env vars only.
+broker_profile: paper

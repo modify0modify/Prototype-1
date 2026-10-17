@@ -1,4 +1,0 @@
-# Paper-mode defaults (simulated execution). Default production-safe path.
-mode = "paper"
-seed = 42
-live_trading_enabled = false

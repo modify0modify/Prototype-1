@@ -1,0 +1,11 @@
+# Research-mode defaults (offline experiments). No broker contact.
+mode: research
+seed: 42
+live_trading_enabled: false
+
+paths:
+  raw_data: data/raw
+  interim_data: data/interim
+  processed_data: data/processed
+  checkpoints: models/checkpoints
+  reports: reports/backtests

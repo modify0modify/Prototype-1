@@ -39,20 +39,26 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
-# Local data & artifacts (keep directory placeholders via .gitkeep)
+# Local data & outputs (keep directory placeholders via .gitkeep)
 data/raw/*
 !data/raw/.gitkeep
+data/interim/*
+!data/interim/.gitkeep
 data/processed/*
 !data/processed/.gitkeep
-data/features/*
-!data/features/.gitkeep
-artifacts/models/*
-!artifacts/models/.gitkeep
-artifacts/backtests/*
-!artifacts/backtests/.gitkeep
-artifacts/logs/*
-!artifacts/logs/.gitkeep
-artifacts/*.db
+data/external/*
+!data/external/.gitkeep
+models/checkpoints/*
+!models/checkpoints/.gitkeep
+models/approved/*
+!models/approved/.gitkeep
+reports/backtests/*
+!reports/backtests/.gitkeep
+reports/walk_forward/*
+!reports/walk_forward/.gitkeep
+reports/paper_trading/*
+!reports/paper_trading/.gitkeep
+reports/*.db
 *.db
 *.sqlite
 *.sqlite3
