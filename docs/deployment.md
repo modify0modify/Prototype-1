@@ -192,7 +192,7 @@ Services:
 
 | Service | Purpose | Ports |
 |---------|---------|-------|
-| `paper-trader` | Looping paper cycles (`--demo --loop`) | — |
+| `paper-trader` | Looping paper cycles (compose ships `--demo` smoke; remove for controlled paper) | — |
 | `dashboard` | Streamlit read-only UI | `8505` |
 
 Volumes: `paper-data`, `paper-reports`, `paper-models`, `paper-logs` (+ bind-mount

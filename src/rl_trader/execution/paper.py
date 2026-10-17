@@ -5,6 +5,7 @@ from __future__ import annotations
 from rl_trader.brokers.base import BrokerFill
 from rl_trader.brokers.paper import PaperBroker, PaperBrokerConfig, PaperTradingDisabledError
 from rl_trader.portfolio.targets import TargetPortfolio
+from rl_trader.risk.decisions import RiskDecision
 from rl_trader.risk.engine import RiskEngine
 
 __all__ = ["PaperExecutor", "PaperTradingDisabledError"]
@@ -31,6 +32,11 @@ class PaperExecutor:
             self.broker.connect()
 
     def execute(self, target: TargetPortfolio) -> BrokerFill:
-        """Review with risk engine and submit to paper broker."""
+        """Review with risk engine and submit to paper broker.
+
+        Rejected risk decisions never reach the broker.
+        """
         result = self.risk_engine.review(target)
+        if result.decision is RiskDecision.REJECTED or result.portfolio is None:
+            raise ValueError(f"risk rejected target — broker not called: {result.reason}")
         return self.broker.submit_target(result)

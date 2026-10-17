@@ -26,6 +26,19 @@ class _Submitter(Protocol):
         ...
 
 
+class _CountedLiveSubmitter:
+    """Wraps the live adapter so every submit increments the router counter."""
+
+    def __init__(self, inner: _Submitter, router: OrderRouter) -> None:
+        self._inner = inner
+        self._router = router
+        self.mode = "live"
+
+    def submit_order(self, request: OrderRequest) -> Order:
+        self._router._note_live_submit()
+        return self._inner.submit_order(request)
+
+
 class OrderRouter:
     """Routes orders to exactly one adapter; paper never touches live.
 
@@ -43,10 +56,15 @@ class OrderRouter:
             raise LiveRoutingError("paper adapter must have mode='paper'")
         if getattr(live, "mode", None) != "live":
             raise LiveRoutingError("live adapter must have mode='live'")
-        self._paper = paper
-        self._live = live
         self._live_submit_calls = 0
         self._paper_submit_calls = 0
+        self._paper = paper
+        # Count every live.submit_order invocation, including accidental
+        # calls from a miswired paper adapter that holds a live reference.
+        self._live = _CountedLiveSubmitter(live, self)
+
+    def _note_live_submit(self) -> None:
+        self._live_submit_calls += 1
 
     @property
     def live_submit_calls(self) -> int:
@@ -62,15 +80,16 @@ class OrderRouter:
         """Submit to the adapter for ``mode`` only."""
         dest = RoutingMode(str(mode))
         if dest is RoutingMode.PAPER:
+            before_live = self._live_submit_calls
             self._paper_submit_calls += 1
             order = self._paper.submit_order(request)
-            # Defense in depth: paper path must never yield a live-mode order.
-            if getattr(self._live, "mode", None) == "live":
-                # Ensure we did not accidentally call live.
-                pass
+            # Defense in depth: paper path must never invoke the live adapter.
+            if self._live_submit_calls != before_live:
+                raise LiveRoutingError(
+                    "paper routing invoked live adapter — separation violated"
+                )
             return order
         if dest is RoutingMode.LIVE:
-            self._live_submit_calls += 1
             return self._live.submit_order(request)
         raise LiveRoutingError(f"unknown routing mode: {mode!r}")
 

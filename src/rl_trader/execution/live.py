@@ -18,6 +18,7 @@ from rl_trader.live_trading.isolation import (
     ignore_agent_control_attempt,
 )
 from rl_trader.portfolio.targets import TargetPortfolio
+from rl_trader.risk.decisions import RiskDecision
 from rl_trader.risk.engine import RiskEngine
 from rl_trader.utils.boundaries import guard_live_import
 
@@ -84,4 +85,8 @@ class LiveExecutor:
             self.controls, agent_control_overrides
         )
         result = self.risk_engine.review(target)
+        if result.decision is RiskDecision.REJECTED or result.portfolio is None:
+            raise ValueError(
+                f"risk rejected target — live broker not called: {result.reason}"
+            )
         return self.broker.submit_target(result)

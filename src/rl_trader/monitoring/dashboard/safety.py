@@ -99,10 +99,6 @@ def assert_no_live_activation_controls(page_source_flags: dict[str, bool]) -> No
 def contains_secret_plaintext(text: str) -> bool:
     """Heuristic: True if text looks like it embeds raw secret material."""
     lowered = text.lower()
-    # Placeholder markers are OK.
-    if "<redacted>" in lowered or "<set>" in lowered or "<unset>" in lowered:
-        # Still flag if an obvious sk- / bearer token pattern remains.
-        pass
     suspicious = (
         "sk-",
         "bearer ",
@@ -111,4 +107,5 @@ def contains_secret_plaintext(text: str) -> bool:
         "password=",
         "-----begin",
     )
+    # Placeholder markers alone are OK; still flag if a secret pattern remains.
     return any(s in lowered for s in suspicious)

@@ -30,6 +30,7 @@ from rl_trader.brokers.types import (
     Position,
     Quote,
 )
+from rl_trader.risk.decisions import RiskDecision
 from rl_trader.risk.engine import RiskResult
 
 # Terminal statuses — cannot cancel / re-fill.
@@ -327,7 +328,7 @@ class PaperBroker:
         for each symbol. Applies the paper cost model on every fill.
         """
         self._require_connected()
-        if risk_result.portfolio is None:
+        if risk_result.decision is RiskDecision.REJECTED or risk_result.portfolio is None:
             raise ValueError(f"cannot paper-trade rejected target: {risk_result.reason}")
         weights = np.asarray(risk_result.portfolio.weights, dtype=np.float64).reshape(-1)
         if not np.isfinite(weights).all():

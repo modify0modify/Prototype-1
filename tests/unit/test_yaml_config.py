@@ -30,7 +30,7 @@ def test_get_settings_from_paper_yaml(monkeypatch: object) -> None:
     assert settings.broker.environment == "paper"
     assert settings.data.universe
     assert settings.paper_trading.evaluation_period_id == "paper-default"
-    assert settings.paper_trading.use_fixture_market_data is True
+    assert settings.paper_trading.use_fixture_market_data is False
 
 
 def test_get_settings_from_backtest_yaml(monkeypatch: object) -> None:

@@ -1,4 +1,10 @@
 # Paper-only compose stack. Live trading is never enabled here.
+#
+# IMPORTANT: the default paper-trader command includes --demo (synthetic fixture
+# market data + stub approved model). That is a labelled smoke/deploy path, NOT
+# controlled paper with live market feeds. For controlled paper, remove --demo,
+# mount a sealed approved manifest, and inject a real MarketDataProvider.
+#
 # Usage:
 #   cp .env.example .env   # edit paper credentials / paths only
 #   docker compose up -d paper-trader
@@ -30,6 +36,7 @@ services:
       - paper-logs:/app/logs
       - ./configs:/app/configs:ro
       - ./models/approved:/app/models/approved:ro
+    # --demo = synthetic fixtures (smoke). Remove for controlled paper.
     command:
       - python
       - scripts/run_paper_trader.py

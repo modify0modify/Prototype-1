@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -138,5 +139,9 @@ def maybe_persist_verified(
         )
     except Exception:
         # Persistence must not unblock trading if DB is unavailable — caller
-        # already has a verified in-memory approval. Log via raise_for_status? soft.
+        # already has a verified in-memory approval. Always log the failure.
+        logging.getLogger("rl_trader.approval").exception(
+            "failed to persist approval for model_id=%s (in-memory verification intact)",
+            verified.manifest.get("model_id"),
+        )
         return

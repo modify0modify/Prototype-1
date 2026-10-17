@@ -153,6 +153,12 @@ class PaperTradingService:
         self._model_frozen = True
 
         if self._market_data is None:
+            if not self.pt.use_fixture_market_data:
+                raise RuntimeError(
+                    "paper trading requires an explicit MarketDataProvider when "
+                    "paper_trading.use_fixture_market_data is false — refusing silent "
+                    "fixture fallback (use --demo only for labelled synthetic smoke runs)"
+                )
             n_assets = getattr(self._model.agent, "n_assets", len(self.settings.data.universe))
             self._market_data = FixtureMarketDataProvider(
                 n_assets=int(n_assets),

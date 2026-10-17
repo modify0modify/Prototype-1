@@ -85,7 +85,8 @@ paper_trading:
   evaluation_period_id: paper-default
   retrain_schedule: null
   enable_scheduled_retrain_hook: false
-  use_fixture_market_data: true
+  # false for controlled paper — use scripts/run_paper_trader.py --demo for fixtures only
+  use_fixture_market_data: false
   commission_bps: 1.0
   spread_bps: 2.0
   slippage_bps: 1.0
