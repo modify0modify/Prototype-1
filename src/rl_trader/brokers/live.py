@@ -42,6 +42,7 @@ from rl_trader.live_trading.stages import (
     effective_capital_limit,
     resolve_stage_policy,
 )
+from rl_trader.risk.decisions import RiskDecision
 from rl_trader.risk.engine import RiskResult
 from rl_trader.risk.kill_switch import KillSwitch
 from rl_trader.utils.boundaries import guard_live_import
@@ -334,8 +335,12 @@ class LiveBroker:
         _enforce_caller_boundary()
         assert_live_trading_allowed(self._settings)
         self._manual.require_activated()
-        if not risk_result.approved:
+        if (
+            risk_result.decision is RiskDecision.REJECTED
+            or risk_result.portfolio is None
+        ):
             raise LiveOrderBlockedError("risk result not approved — refuse live submit")
+        portfolio = risk_result.portfolio
 
         policy = resolve_stage_policy(
             self._settings.live,
@@ -354,15 +359,19 @@ class LiveBroker:
             self._shadow_log.append(shadow)
             self._persist_shadow(shadow)
             return BrokerFill(
-                portfolio=risk_result.portfolio,
+                portfolio=portfolio,
                 filled_at=now,
                 mode="live-shadow",
-                metadata={"shadow": True, "stage": int(policy.stage), "external_api_called": False},
+                metadata={
+                    "shadow": True,
+                    "stage": int(policy.stage),
+                    "external_api_called": False,
+                },
             )
 
         # Stage ≥ 1: still sandbox — no external API.
         return BrokerFill(
-            portfolio=risk_result.portfolio,
+            portfolio=portfolio,
             filled_at=now,
             mode="live-sandbox",
             metadata={

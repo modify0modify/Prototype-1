@@ -49,7 +49,7 @@ class ApprovalEvidence:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ApprovalEvidence:
         """Restore from a mapping (unknown keys → extras)."""
-        known = {f.name for f in cls.__dataclass_fields__.values()}  # type: ignore[attr-defined]
+        known = {f.name for f in cls.__dataclass_fields__.values()}
         kwargs: dict[str, Any] = {}
         extras: dict[str, Any] = {}
         for key, value in data.items():

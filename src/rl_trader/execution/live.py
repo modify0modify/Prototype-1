@@ -6,6 +6,7 @@ Research modules must never import this module.
 from __future__ import annotations
 
 import inspect
+from typing import Any
 
 from rl_trader.brokers.base import BrokerFill
 from rl_trader.brokers.guards import assert_live_trading_allowed
@@ -69,7 +70,7 @@ class LiveExecutor:
         self,
         target: TargetPortfolio,
         *,
-        agent_control_overrides: dict | None = None,
+        agent_control_overrides: dict[str, Any] | None = None,
     ) -> BrokerFill:
         """Review with risk engine and submit to live broker (shadow at Stage 0).
 
