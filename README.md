@@ -49,7 +49,7 @@ Defined as `rl_trader.config.LIVE_TRADING_CONFIRMATION_PHRASE`.
 2. `LIVE_TRADING_ENABLED=true`
 3. `BROKER_ENVIRONMENT=live`
 4. Acknowledgement equals the confirmation phrase above
-5. Approved model manifest exists with `"approved": true`
+5. Sealed model manifest with `approval_status: live` that passes formal live-tier gates
 6. Risk-engine startup checks pass
 7. Non-empty `LIVE_ACCOUNT_ID`
 8. Explicit `LIVE_MAX_CAPITAL` (> 0)
@@ -57,7 +57,30 @@ Defined as `rl_trader.config.LIVE_TRADING_CONFIRMATION_PHRASE`.
 10. Explicit `risk.daily_loss_limit`
 
 If any gate fails, the process raises `LiveTradingBlockedError` and **must not** open a live
-broker connection.
+broker connection. The live broker adapter remains a stub — these gates do **not** enable
+unsupervised live trading.
+
+## Formal model approval
+
+Paper trading loads only hash-sealed manifests that pass **configurable** paper gates
+(`src/rl_trader/approval/`). Live activation additionally requires live-tier status and
+stricter gates. Thresholds live under `approval.paper.*` / `approval.live.*` in
+`configs/paper.yaml` and are labelled **EXAMPLE** defaults — override them; nothing
+financial is hard-coded in the gate engine.
+
+**Hash scheme:** canonical JSON (sorted keys, compact separators) of all fields except
+`content_hash` / `signature` → SHA-256 hex (`content_hash`). Optional HMAC-SHA256 over
+the hash when `approval.require_manifest_signature: true` (key from
+`RL_TRADER_MANIFEST_SIGNING_KEY`). Tampered or incomplete manifests are rejected.
+
+**Paper vs live:** paper accepts `approval_status` in `{paper, live}` and evaluates paper
+gates only; live requires `approval_status: live` and paper gates **plus** live gates
+(min paper duration/trades, paper Sharpe/DD, slippage diff, reconciliation, kill-switch
+investigation, manual approval record, explicit live capital limit, broker sandbox test).
+
+See `models/approved/manifest.example.json` (template — reseal before use) and
+`model_approvals` storage columns (`approval_tier`, `content_hash`, `code_commit_id`,
+`evidence_json`).
 ## Dependency direction
 
 ```
@@ -233,9 +256,10 @@ python scripts/run_paper_trader.py --config configs/paper.yaml --demo
 python scripts/run_paper_trader.py --config configs/paper.yaml --demo --dry-run
 ```
 
-Loop: paper-mode gate → approved model (frozen for `evaluation_period_id`) → feature
-manifest check → market/features freshness → agent targets → risk engine →
-`PaperBroker` (skipped on `--dry-run`) → reconcile → decisions/metrics/alerts.
+Loop: paper-mode gate → formally approved sealed model (frozen for
+`evaluation_period_id`) → feature manifest check → market/features freshness →
+agent targets → risk engine → `PaperBroker` (skipped on `--dry-run`) → reconcile →
+decisions/metrics/alerts.
 State under `reports/paper_trading/` (`heartbeat.json`, `decisions.jsonl`, lock file).
 **No live broker.** Retrain is a separate config hook and does not run in-loop.
 
@@ -267,6 +291,7 @@ State under `reports/paper_trading/` (`heartbeat.json`, `decisions.jsonl`, lock 
 | `portfolio` | target portfolio types |
 | `execution` | paper executor (live executor gated, not re-exported) |
 | `paper_trading` | prospective paper service loop (lock, heartbeat, decisions) |
+| `approval` | hashed manifests + configurable paper/live gates |
 | `risk` | deterministic approve / reject / resize |
 | `brokers` | shared `BrokerAdapter`; persistent `PaperBroker` sim; live stub only |
 | `monitoring` | logging, audit, Streamlit dashboard (read-only) |

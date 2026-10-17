@@ -14,6 +14,7 @@ from rl_trader.config.live_gates import (
 )
 from rl_trader.config.masking import mask_account_id, redact_secret
 from rl_trader.config.models import (
+    ApprovalSettings,
     BacktestSettings,
     BenchmarkSettings,
     BrokerSettings,
@@ -22,8 +23,10 @@ from rl_trader.config.models import (
     EnvironmentSettings,
     FeatureSettings,
     FundamentalValuationSettings,
+    LiveApprovalGateSettings,
     LiveTradingSettings,
     MonitoringSettings,
+    PaperApprovalGateSettings,
     PaperTradingSettings,
     RiskSettings,
     TrainingSettings,
@@ -41,6 +44,7 @@ __all__ = [
     "SUPPORTED_TICKERS",
     "ActivationReport",
     "AppSettings",
+    "ApprovalSettings",
     "BacktestSettings",
     "BenchmarkSettings",
     "BrokerSettings",
@@ -50,9 +54,11 @@ __all__ = [
     "FeatureSettings",
     "FundamentalValuationSettings",
     "GuardCheck",
+    "LiveApprovalGateSettings",
     "LiveTradingBlockedError",
     "LiveTradingSettings",
     "MonitoringSettings",
+    "PaperApprovalGateSettings",
     "PaperTradingSettings",
     "RiskSettings",
     "RuntimeMode",

@@ -41,49 +41,16 @@ def _specs() -> tuple[FeatureSpec, ...]:
 
 
 def _write_stub_approved(root: Path, *, approved: bool = True, n_assets: int = 2) -> Path:
-    ckpt = root / "ckpt"
-    ckpt.mkdir(parents=True, exist_ok=True)
-    specs = _specs()
-    save_checkpoint_metadata(
-        ckpt,
-        CheckpointMetadata(
-            model_id="unit-paper-model",
-            algorithm="stub",
-            feature_specs=specs,
-            training_period=TrainingPeriod(
-                start=datetime(2023, 1, 3).date(),
-                end=datetime(2023, 6, 30).date(),
-            ),
-            seed=1,
-            package_version="0.1.0-test",
-        ),
+    from rl_trader.approval.testing import (
+        write_sealed_approved_manifest,
+        write_sealed_unapproved_manifest,
     )
-    (ckpt / "feature_manifest.json").write_text(
-        json.dumps(
-            {
-                "feature_specs": [
-                    {"name": s.name, "lookback": s.lookback, "version": "1", "causal_only": True}
-                    for s in specs
-                ]
-            }
-        ),
-        encoding="utf-8",
-    )
-    manifest = root / "manifest.json"
-    manifest.write_text(
-        json.dumps(
-            {
-                "approved": approved,
-                "model_id": "unit-paper-model",
-                "model_version": "9",
-                "algorithm": "stub",
-                "n_assets": n_assets,
-                "checkpoint_dir": str(ckpt),
-            }
-        ),
-        encoding="utf-8",
-    )
-    return manifest
+
+    if approved:
+        return write_sealed_approved_manifest(
+            root, tier="paper", model_id="unit-paper-model", n_assets=n_assets
+        )
+    return write_sealed_unapproved_manifest(root, model_id="unit-paper-model")
 
 
 def _settings(tmp_path: Path, manifest: Path, **pt_overrides: object) -> AppSettings:
@@ -135,13 +102,15 @@ def test_paper_mode_gate_rejects_live(tmp_path: Path) -> None:
 
 def test_approved_model_only_load(tmp_path: Path) -> None:
     bad = _write_stub_approved(tmp_path / "bad", approved=False)
-    with pytest.raises(ApprovedModelError, match="not approved"):
+    with pytest.raises(ApprovedModelError, match="not paper/live"):
         load_approved_model(bad, evaluation_period_id="p")
     good = _write_stub_approved(tmp_path / "good")
     bundle = load_approved_model(good, evaluation_period_id="p")
     assert bundle.model_id == "unit-paper-model"
-    assert bundle.model_version == "9"
+    assert bundle.model_version == "0.1.0-demo"
     assert bundle.algorithm == "stub"
+    assert bundle.content_hash
+    assert bundle.approval_status == "paper"
 
 
 def test_stale_data_shutdown(tmp_path: Path) -> None:

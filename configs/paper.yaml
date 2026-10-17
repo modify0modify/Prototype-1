@@ -40,6 +40,38 @@ risk:
 broker:
   environment: paper
 
+# Formal model approval — thresholds are EXAMPLE defaults (not advice).
+# Override every value for your risk appetite. Manifests must be hash-sealed.
+approval:
+  require_manifest_signature: false
+  persist_approvals: true
+  paper:
+    # EXAMPLE defaults — conservative illustrations only
+    min_oos_return: 0.0
+    max_drawdown: 0.25
+    max_turnover: 2.0
+    min_evaluated_market_periods: 3
+    min_regimes_evaluated: 2
+    min_excess_return_vs_benchmark: 0.0
+    require_transaction_costs_included: true
+    require_no_critical_audit_findings: true
+    require_feature_manifest_match: true
+    require_model_metadata: true
+    require_regression_tests_passed: true
+    require_benchmark_comparison: true
+  live:
+    # EXAMPLE defaults — live broker remains unimplemented/stubbed
+    min_paper_duration_days: 30.0
+    min_paper_trades: 50
+    min_paper_sharpe: 0.5
+    max_paper_drawdown: 0.20
+    max_slippage_difference_bps: 5.0
+    require_no_unresolved_reconciliation_errors: true
+    require_no_kill_switch_investigation: true
+    require_manual_approval_record: true
+    require_explicit_live_capital_limit: true
+    require_successful_broker_sandbox_test: true
+
 # Prospective paper-trading service (frozen model for evaluation_period_id).
 paper_trading:
   state_dir: reports/paper_trading

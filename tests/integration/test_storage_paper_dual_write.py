@@ -2,17 +2,11 @@
 
 from __future__ import annotations
 
-import json
 from datetime import UTC, datetime
 from pathlib import Path
 
 from sqlalchemy import func, select
 
-from rl_trader.agents.checkpoint import (
-    CheckpointMetadata,
-    TrainingPeriod,
-    save_checkpoint_metadata,
-)
 from rl_trader.brokers.paper import PaperBroker, PaperBrokerConfig
 from rl_trader.config import AppSettings, RuntimeMode
 from rl_trader.config.models import (
@@ -22,64 +16,20 @@ from rl_trader.config.models import (
     PaperTradingSettings,
     RiskSettings,
 )
-from rl_trader.features.engineering import FeatureSpec
 from rl_trader.paper_trading.market_data import FixtureMarketDataProvider
 from rl_trader.paper_trading.service import PaperTradingService
 from rl_trader.storage import OrderRow, create_db_engine, session_scope, upgrade_head
 
 
 def _manifest(tmp_path: Path) -> Path:
-    ckpt = tmp_path / "ckpt"
-    ckpt.mkdir(parents=True, exist_ok=True)
-    specs = (
-        FeatureSpec(name="returns_1d", lookback=1),
-        FeatureSpec(name="vol_20d", lookback=20),
+    from rl_trader.approval.testing import write_sealed_approved_manifest
+
+    return write_sealed_approved_manifest(
+        tmp_path / "approved",
+        tier="paper",
+        model_id="db-paper",
+        n_assets=2,
     )
-    save_checkpoint_metadata(
-        ckpt,
-        CheckpointMetadata(
-            model_id="db-paper",
-            algorithm="stub",
-            feature_specs=specs,
-            training_period=TrainingPeriod(
-                start=datetime(2023, 1, 3).date(),
-                end=datetime(2023, 6, 30).date(),
-            ),
-            seed=3,
-            package_version="db-1",
-        ),
-    )
-    (ckpt / "feature_manifest.json").write_text(
-        json.dumps(
-            {
-                "feature_specs": [
-                    {
-                        "name": s.name,
-                        "lookback": s.lookback,
-                        "version": "1",
-                        "causal_only": True,
-                    }
-                    for s in specs
-                ]
-            }
-        ),
-        encoding="utf-8",
-    )
-    path = tmp_path / "manifest.json"
-    path.write_text(
-        json.dumps(
-            {
-                "approved": True,
-                "model_id": "db-paper",
-                "model_version": "db-1",
-                "algorithm": "stub",
-                "n_assets": 2,
-                "checkpoint_dir": str(ckpt),
-            }
-        ),
-        encoding="utf-8",
-    )
-    return path
 
 
 def test_paper_dual_write_and_file_ledger(tmp_path: Path) -> None:

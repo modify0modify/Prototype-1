@@ -1,4 +1,4 @@
-"""Load only approved model candidates for paper trading."""
+"""Load only formally approved model candidates for paper trading."""
 
 from __future__ import annotations
 
@@ -14,6 +14,8 @@ from rl_trader.agents.checkpoint import (
     load_checkpoint_metadata,
 )
 from rl_trader.agents.interface import PortfolioAgent, SB3PortfolioAgent
+from rl_trader.approval.service import ApprovalRejectedError, verify_paper_approval
+from rl_trader.config.models import ApprovalSettings
 from rl_trader.features.engineering import FeatureSpec
 from rl_trader.validation.features import FeatureMismatchError
 
@@ -35,34 +37,45 @@ class ApprovedModelBundle:
     evaluation_period_id: str
     metadata: CheckpointMetadata | None
     manifest_path: Path
+    content_hash: str = ""
+    approval_status: str = "paper"
 
 
-def load_approved_manifest(path: Path) -> dict[str, Any]:
-    """Load and validate an approved-model manifest document."""
-    if not path.is_file():
-        raise ApprovedModelError(f"approved model manifest missing: {path}")
+def load_approved_manifest(
+    path: Path,
+    *,
+    approval_settings: ApprovalSettings | None = None,
+) -> dict[str, Any]:
+    """Load and formally verify an approved-model manifest (hash + paper gates)."""
+    settings = approval_settings or ApprovalSettings()
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        raise ApprovedModelError(f"approved model manifest unreadable: {exc}") from exc
-    if not isinstance(data, dict):
-        raise ApprovedModelError("approved model manifest root must be an object")
-    if data.get("approved") is not True:
-        raise ApprovedModelError(
-            f"model not approved in manifest model_id={data.get('model_id', '<unknown>')}"
-        )
-    if not data.get("model_id"):
-        raise ApprovedModelError("approved manifest requires model_id")
-    return data
+        verified = verify_paper_approval(path, settings)
+    except ApprovalRejectedError as exc:
+        raise ApprovedModelError(str(exc)) from exc
+    return verified.manifest
 
 
 def _feature_specs_from_manifest_or_checkpoint(
     manifest: dict[str, Any],
     checkpoint_dir: Path,
 ) -> tuple[FeatureSpec, ...]:
+    fm = manifest.get("feature_manifest")
+    if isinstance(fm, dict):
+        raw = fm.get("feature_specs")
+        if isinstance(raw, list) and raw:
+            return tuple(
+                FeatureSpec(
+                    name=str(item["name"]),
+                    lookback=int(item["lookback"]),
+                    version=str(item.get("version", "1")),
+                    causal_only=bool(item.get("causal_only", True)),
+                )
+                for item in raw
+                if isinstance(item, dict)
+            )
     raw = manifest.get("feature_specs")
     if isinstance(raw, list) and raw:
-        specs = tuple(
+        return tuple(
             FeatureSpec(
                 name=str(item["name"]),
                 lookback=int(item["lookback"]),
@@ -72,9 +85,6 @@ def _feature_specs_from_manifest_or_checkpoint(
             for item in raw
             if isinstance(item, dict)
         )
-        if specs:
-            return specs
-    # Fall back to checkpoint metadata / feature_manifest.json
     feature_manifest = checkpoint_dir / "feature_manifest.json"
     if feature_manifest.is_file():
         doc = json.loads(feature_manifest.read_text(encoding="utf-8"))
@@ -99,14 +109,19 @@ def load_approved_model(
     *,
     evaluation_period_id: str,
     device: str = "cpu",
+    approval_settings: ApprovalSettings | None = None,
 ) -> ApprovedModelBundle:
-    """Resolve an approved manifest → verified checkpoint → frozen agent.
+    """Resolve a formally approved manifest → verified checkpoint → frozen agent.
 
-    Supports ``algorithm: stub`` (tests / smoke) and SB3 algorithms via
-    :class:`SB3PortfolioAgent`. The returned agent is intended to stay frozen
-    for the evaluation period — callers must not retrain it in-loop.
+    Unapproved, tampered, incomplete, or gate-failing manifests are rejected.
     """
-    manifest = load_approved_manifest(manifest_path)
+    settings = approval_settings or ApprovalSettings()
+    try:
+        verified = verify_paper_approval(manifest_path, settings)
+    except ApprovalRejectedError as exc:
+        raise ApprovedModelError(str(exc)) from exc
+    manifest = verified.manifest
+
     model_id = str(manifest["model_id"])
     algorithm = str(manifest.get("algorithm") or "stub").lower()
     ckpt_raw = manifest.get("checkpoint_dir")
@@ -132,7 +147,6 @@ def load_approved_model(
     if algorithm == "stub":
         n_assets = int(manifest.get("n_assets") or 0)
         if n_assets < 1:
-            # Infer from action space notes / feature dims is unavailable — require.
             raise ApprovedModelError("stub approved model requires n_assets >= 1")
         agent: PortfolioAgent = StubAgent(n_assets=n_assets)
     else:
@@ -153,4 +167,6 @@ def load_approved_model(
         evaluation_period_id=evaluation_period_id,
         metadata=metadata,
         manifest_path=manifest_path,
+        content_hash=verified.content_hash,
+        approval_status=str(manifest.get("approval_status") or "paper"),
     )

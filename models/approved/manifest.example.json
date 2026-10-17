@@ -1,10 +1,69 @@
 {
-  "approved": true,
   "model_id": "example-approved-model",
   "model_version": "1",
   "algorithm": "stub",
   "n_assets": 2,
+  "hyperparameters": {
+    "algorithm": "stub",
+    "n_assets": 2
+  },
+  "train_period": {
+    "start": "2023-01-03",
+    "end": "2023-06-30"
+  },
+  "val_period": {
+    "start": "2023-07-01",
+    "end": "2023-09-30"
+  },
+  "test_period": {
+    "start": "2023-10-01",
+    "end": "2023-12-29"
+  },
+  "feature_manifest": {
+    "feature_specs": [
+      {
+        "name": "returns_1d",
+        "lookback": 1,
+        "version": "1",
+        "causal_only": true
+      },
+      {
+        "name": "vol_20d",
+        "lookback": 20,
+        "version": "1",
+        "causal_only": true
+      }
+    ]
+  },
+  "benchmark_results": {
+    "buy_hold": {
+      "total_return": 0.01
+    }
+  },
+  "transaction_cost_assumptions": {
+    "commission_bps": 1.0,
+    "spread_bps": 2.0,
+    "slippage_bps": 1.0
+  },
+  "approval_status": "paper",
+  "approval_timestamp": "2026-01-01T00:00:00+00:00",
+  "approver": "example-approver",
+  "code_commit_id": "REPLACE_WITH_GIT_SHA",
   "checkpoint_dir": "models/checkpoints/example-approved-model",
-  "approved_at": "2026-01-01T00:00:00Z",
-  "notes": "Copy to manifest.json only after risk sign-off. Placeholder — not a live approval. Point checkpoint_dir at a verified training checkpoint; use algorithm stub only for smoke demos."
+  "evaluation_evidence": {
+    "unresolved_critical_audit_findings": 0,
+    "oos_return": 0.02,
+    "max_drawdown": 0.1,
+    "turnover": 0.8,
+    "transaction_costs_included": true,
+    "evaluated_market_periods": 5,
+    "regimes_evaluated": 3,
+    "feature_manifest_mismatch": false,
+    "model_metadata_missing": false,
+    "regression_tests_failed": false,
+    "excess_return_vs_benchmark": 0.01,
+    "benchmark_comparison_present": true
+  },
+  "notes": "EXAMPLE TEMPLATE — run seal_manifest() before use. content_hash below is a placeholder and will fail verify until resealed. Thresholds in configs/paper.yaml approval.* are EXAMPLE defaults only.",
+  "content_hash": "REPLACE_BY_SEALING"
 }

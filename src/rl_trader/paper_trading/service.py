@@ -148,6 +148,7 @@ class PaperTradingService:
             self._model = load_approved_model(
                 self.settings.live.approved_model_manifest,
                 evaluation_period_id=self.pt.evaluation_period_id,
+                approval_settings=self.settings.approval,
             )
         self._model_frozen = True
 

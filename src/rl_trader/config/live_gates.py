@@ -18,9 +18,7 @@ All of the following must pass:
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from rl_trader.config.constants import LIVE_TRADING_CONFIRMATION_PHRASE
@@ -56,20 +54,24 @@ class LiveTradingBlockedError(RuntimeError):
     """Raised when live routing is attempted without full activation."""
 
 
-def _manifest_is_approved(path: Path) -> tuple[bool, str]:
+def _live_manifest_approved(settings: AppSettings) -> tuple[bool, str]:
+    """Require sealed live-tier formal approval (stricter than paper)."""
+    path = settings.live.approved_model_manifest
     if not path.is_file():
         return False, f"manifest missing: {path}"
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        return False, f"manifest unreadable: {exc}"
-    if not isinstance(data, dict):
-        return False, "manifest root must be an object"
-    approved = data.get("approved") is True
-    model_id = data.get("model_id", "<unknown>")
-    if approved:
-        return True, f"approved model_id={model_id}"
-    return False, f"manifest not approved model_id={model_id}"
+        from rl_trader.approval.service import ApprovalRejectedError, verify_live_approval
+
+        verified = verify_live_approval(path, settings.approval)
+    except ApprovalRejectedError as exc:
+        return False, f"live approval rejected: {exc}"
+    except Exception as exc:  # noqa: BLE001 — surface any verify failure as blocked
+        return False, f"live approval error: {exc}"
+    return (
+        True,
+        f"live-approved model_id={verified.manifest.get('model_id')} "
+        f"hash={verified.content_hash[:12]}…",
+    )
 
 
 def evaluate_live_activation(settings: AppSettings) -> ActivationReport:
@@ -84,7 +86,7 @@ def evaluate_live_activation(settings: AppSettings) -> ActivationReport:
     capital_ok = settings.live.max_live_capital is not None and settings.live.max_live_capital > 0
     order_ok = settings.live.max_order_value is not None and settings.live.max_order_value > 0
     daily_ok = settings.risk.daily_loss_limit is not None
-    manifest_ok, manifest_detail = _manifest_is_approved(settings.live.approved_model_manifest)
+    manifest_ok, manifest_detail = _live_manifest_approved(settings)
     risk_report = run_risk_startup_checks(settings.risk)
 
     checks = (
@@ -114,6 +116,11 @@ def evaluate_live_activation(settings: AppSettings) -> ActivationReport:
         ),
         GuardCheck(
             name="approved_model_manifest",
+            passed=manifest_ok,
+            detail=manifest_detail,
+        ),
+        GuardCheck(
+            name="live_tier_formal_approval",
             passed=manifest_ok,
             detail=manifest_detail,
         ),

@@ -6,11 +6,6 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
-from rl_trader.agents.checkpoint import (
-    CheckpointMetadata,
-    TrainingPeriod,
-    save_checkpoint_metadata,
-)
 from rl_trader.brokers.paper import PaperBroker, PaperBrokerConfig
 from rl_trader.config import AppSettings, RuntimeMode
 from rl_trader.config.models import (
@@ -19,63 +14,19 @@ from rl_trader.config.models import (
     PaperTradingSettings,
     RiskSettings,
 )
-from rl_trader.features.engineering import FeatureSpec
 from rl_trader.paper_trading.market_data import FixtureMarketDataProvider
 from rl_trader.paper_trading.service import PaperTradingService
 
 
 def _approved(tmp_path: Path) -> Path:
-    ckpt = tmp_path / "ckpt"
-    ckpt.mkdir(parents=True, exist_ok=True)
-    specs = (
-        FeatureSpec(name="returns_1d", lookback=1),
-        FeatureSpec(name="vol_20d", lookback=20),
+    from rl_trader.approval.testing import write_sealed_approved_manifest
+
+    return write_sealed_approved_manifest(
+        tmp_path / "approved",
+        tier="paper",
+        model_id="integ-paper",
+        n_assets=2,
     )
-    save_checkpoint_metadata(
-        ckpt,
-        CheckpointMetadata(
-            model_id="integ-paper",
-            algorithm="stub",
-            feature_specs=specs,
-            training_period=TrainingPeriod(
-                start=datetime(2023, 1, 3).date(),
-                end=datetime(2023, 12, 29).date(),
-            ),
-            seed=7,
-            package_version="integ-1",
-        ),
-    )
-    (ckpt / "feature_manifest.json").write_text(
-        json.dumps(
-            {
-                "feature_specs": [
-                    {
-                        "name": s.name,
-                        "lookback": s.lookback,
-                        "version": "1",
-                        "causal_only": True,
-                    }
-                    for s in specs
-                ]
-            }
-        ),
-        encoding="utf-8",
-    )
-    manifest = tmp_path / "manifest.json"
-    manifest.write_text(
-        json.dumps(
-            {
-                "approved": True,
-                "model_id": "integ-paper",
-                "model_version": "integ-1",
-                "algorithm": "stub",
-                "n_assets": 2,
-                "checkpoint_dir": str(ckpt),
-            }
-        ),
-        encoding="utf-8",
-    )
-    return manifest
 
 
 def test_prospective_paper_loop_end_to_end(tmp_path: Path) -> None:

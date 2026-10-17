@@ -123,8 +123,8 @@ class ModelApprovalRow(Base):
     __tablename__ = "model_approvals"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=new_uuid)
-    checkpoint_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True), ForeignKey("model_checkpoints.id")
+    checkpoint_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("model_checkpoints.id"), nullable=True
     )
     model_id: Mapped[str] = mapped_column(String(128), index=True)
     approved: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -132,9 +132,14 @@ class ModelApprovalRow(Base):
     approved_by: Mapped[str] = mapped_column(String(128), default="")
     manifest_path: Mapped[str] = mapped_column(String(512), default="")
     notes: Mapped[str] = mapped_column(Text, default="")
+    # Formal approval extensions (tier + integrity)
+    approval_tier: Mapped[str] = mapped_column(String(16), default="paper")
+    content_hash: Mapped[str] = mapped_column(String(128), default="")
+    code_commit_id: Mapped[str] = mapped_column(String(64), default="")
+    evidence_json: Mapped[str] = mapped_column(Text, default="{}")
     created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=_utc_now)
 
-    checkpoint: Mapped[ModelCheckpointRow] = relationship(back_populates="approvals")
+    checkpoint: Mapped[ModelCheckpointRow | None] = relationship(back_populates="approvals")
 
 
 class ConfigurationVersionRow(Base):

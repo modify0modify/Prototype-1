@@ -15,6 +15,7 @@ from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from rl_trader.config.models import (
+    ApprovalSettings,
     BacktestSettings,
     BenchmarkSettings,
     BrokerSettings,
@@ -71,6 +72,7 @@ class AppSettings(BaseSettings):
     risk: RiskSettings = Field(default_factory=RiskSettings)
     broker: BrokerSettings = Field(default_factory=BrokerSettings)
     paper_trading: PaperTradingSettings = Field(default_factory=PaperTradingSettings)
+    approval: ApprovalSettings = Field(default_factory=ApprovalSettings)
     monitoring: MonitoringSettings = Field(default_factory=MonitoringSettings)
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     fundamentals: FundamentalValuationSettings = Field(

@@ -31,11 +31,20 @@ from rl_trader.risk.startup import run_risk_startup_checks
 
 
 def _write_manifest(path: Path, *, approved: bool = True) -> Path:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps({"approved": approved, "model_id": "unit-test-model"}),
-        encoding="utf-8",
+    """Write a sealed formal approval manifest for live-gate tests."""
+    from rl_trader.approval.testing import (
+        write_sealed_approved_manifest,
+        write_sealed_unapproved_manifest,
     )
+
+    root = path.parent / (path.stem + "_bundle")
+    if approved:
+        sealed = write_sealed_approved_manifest(root, tier="live", model_id="unit-test-model")
+    else:
+        sealed = write_sealed_unapproved_manifest(root, model_id="unit-test-model")
+    # Keep the path callers expect.
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(sealed.read_text(encoding="utf-8"), encoding="utf-8")
     return path
 
 

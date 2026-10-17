@@ -420,6 +420,74 @@ class PaperTradingSettings(BaseModel):
     initial_cash: Annotated[float, Field(gt=0.0)] = 100_000.0
 
 
+class PaperApprovalGateSettings(BaseModel):
+    """Configurable paper-trading approval thresholds.
+
+    Defaults below are **EXAMPLE** conservative illustrations only — not
+    investment advice and not hard-coded business rules. Override per deployment.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # EXAMPLE default: require non-negative OOS return
+    min_oos_return: float = 0.0
+    # EXAMPLE default: max drawdown must be <= 25%
+    max_drawdown: Annotated[float, Field(gt=0.0, le=1.0)] = 0.25
+    # EXAMPLE default: turnover fraction cap
+    max_turnover: Annotated[float, Field(gt=0.0)] = 2.0
+    # EXAMPLE default: at least this many evaluated market periods (e.g. folds/days)
+    min_evaluated_market_periods: Annotated[int, Field(ge=1)] = 3
+    # EXAMPLE default: require evidence across at least this many regimes
+    min_regimes_evaluated: Annotated[int, Field(ge=1)] = 2
+    # EXAMPLE default: minimum excess return vs required benchmark
+    min_excess_return_vs_benchmark: float = 0.0
+    require_transaction_costs_included: bool = True
+    require_no_critical_audit_findings: bool = True
+    require_feature_manifest_match: bool = True
+    require_model_metadata: bool = True
+    require_regression_tests_passed: bool = True
+    require_benchmark_comparison: bool = True
+
+
+class LiveApprovalGateSettings(BaseModel):
+    """Additional live-tier approval thresholds (on top of paper gates).
+
+    Defaults are **EXAMPLE** illustrations only — override explicitly before any
+    live consideration. Live broker remains unimplemented/stubbed.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # EXAMPLE default: 30 calendar days of prospective paper
+    min_paper_duration_days: Annotated[float, Field(ge=0.0)] = 30.0
+    # EXAMPLE default: at least 50 paper trades
+    min_paper_trades: Annotated[int, Field(ge=0)] = 50
+    # EXAMPLE default: paper Sharpe must be >= 0.5
+    min_paper_sharpe: float = 0.5
+    # EXAMPLE default: paper max drawdown <= 20%
+    max_paper_drawdown: Annotated[float, Field(gt=0.0, le=1.0)] = 0.20
+    # EXAMPLE default: |paper slippage − assumed| <= 5 bps
+    max_slippage_difference_bps: Annotated[float, Field(ge=0.0)] = 5.0
+    require_no_unresolved_reconciliation_errors: bool = True
+    require_no_kill_switch_investigation: bool = True
+    require_manual_approval_record: bool = True
+    require_explicit_live_capital_limit: bool = True
+    require_successful_broker_sandbox_test: bool = True
+
+
+class ApprovalSettings(BaseModel):
+    """Formal model-approval policy (hashed manifests + configurable gates)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    # When True, HMAC signature is required (needs RL_TRADER_MANIFEST_SIGNING_KEY).
+    require_manifest_signature: bool = False
+    # Persist approval rows into storage.model_approvals when a DB URL is available.
+    persist_approvals: bool = True
+    paper: PaperApprovalGateSettings = Field(default_factory=PaperApprovalGateSettings)
+    live: LiveApprovalGateSettings = Field(default_factory=LiveApprovalGateSettings)
+
+
 class MonitoringSettings(BaseModel):
     """Logging and audit settings — never log secret values."""
 
