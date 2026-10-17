@@ -20,9 +20,39 @@ data:
 
 features:
   lookback_bars: 20
-  normalize: true
+  normalize: false
   causal_only: true
   feature_version: "1"
+  benchmark_symbol: SPY
+  output_dir: data/processed/features
+  manifest_dir: data/processed/features
+  quality_report_dir: reports/feature_quality
+  return_windows: [1, 5, 20, 60]
+  ma_windows: [5, 20, 60]
+  rsi_period: 14
+  macd_fast: 12
+  macd_slow: 26
+  macd_signal: 9
+  bollinger_period: 20
+  bollinger_std: 2.0
+  atr_period: 14
+  volatility_window: 20
+  downside_vol_window: 20
+  volume_zscore_window: 20
+  drawdown_window: 60
+  rolling_high_window: 60
+  regime_trend_window: 50
+  regime_vol_window: 20
+  vol_percentile_window: 60
+  bull_threshold: 0.02
+  bear_threshold: -0.02
+  high_vol_percentile: 0.80
+  low_vol_percentile: 0.20
+  turnover_window: 5
+  include_portfolio_state: true
+  include_fundamentals: true
+  include_regime: true
+  drop_na_rows: false
 
 training:
   algorithm: ppo

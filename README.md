@@ -111,6 +111,23 @@ python scripts/download_data.py --config configs/research.yaml
 make download-data
 ```
 
+## Feature engineering (look-ahead-safe)
+
+Causal technical, regime, portfolio-state, and (publication-date-lagged) fundamental
+features. **Row policy:** never drop rows silently — warm-up / missing values stay as
+explicit NaNs and are summarized in the quality report.
+
+| Artifact | Path |
+|----------|------|
+| Feature matrices | `data/processed/features/{SYMBOL}_features.parquet` |
+| Feature manifest | `data/processed/features/{SYMBOL}_feature_manifest.json` |
+| Quality report | `reports/feature_quality/{SYMBOL}_feature_quality.json` |
+
+```bash
+python scripts/build_features.py --config configs/research.yaml
+make build-features
+```
+
 ## Setup
 
 Requires Python 3.12.

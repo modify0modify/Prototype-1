@@ -66,14 +66,52 @@ class DataSettings(BaseModel):
 
 
 class FeatureSettings(BaseModel):
-    """Feature-engineering settings."""
+    """Feature-engineering settings (all windows are causal / look-ahead-safe)."""
 
     model_config = ConfigDict(extra="forbid")
 
     lookback_bars: Annotated[int, Field(ge=1, le=10_000)] = 20
-    normalize: bool = True
+    normalize: bool = False  # optional z-score; never drops rows
     causal_only: bool = True
     feature_version: str = "1"
+    benchmark_symbol: str = "SPY"
+    output_dir: Path = Path("data/processed/features")
+    manifest_dir: Path = Path("data/processed/features")
+    quality_report_dir: Path = Path("reports/feature_quality")
+
+    # Technical windows
+    return_windows: tuple[int, ...] = (1, 5, 20, 60)
+    ma_windows: tuple[int, ...] = (5, 20, 60)
+    rsi_period: Annotated[int, Field(ge=2, le=500)] = 14
+    macd_fast: Annotated[int, Field(ge=2, le=200)] = 12
+    macd_slow: Annotated[int, Field(ge=3, le=400)] = 26
+    macd_signal: Annotated[int, Field(ge=2, le=200)] = 9
+    bollinger_period: Annotated[int, Field(ge=2, le=500)] = 20
+    bollinger_std: Annotated[float, Field(gt=0.0, le=10.0)] = 2.0
+    atr_period: Annotated[int, Field(ge=2, le=500)] = 14
+    volatility_window: Annotated[int, Field(ge=2, le=500)] = 20
+    downside_vol_window: Annotated[int, Field(ge=2, le=500)] = 20
+    volume_zscore_window: Annotated[int, Field(ge=2, le=500)] = 20
+    drawdown_window: Annotated[int, Field(ge=2, le=1000)] = 60
+    rolling_high_window: Annotated[int, Field(ge=2, le=1000)] = 60
+
+    # Regime
+    regime_trend_window: Annotated[int, Field(ge=2, le=500)] = 50
+    regime_vol_window: Annotated[int, Field(ge=2, le=500)] = 20
+    vol_percentile_window: Annotated[int, Field(ge=5, le=1000)] = 252
+    bull_threshold: Annotated[float, Field(gt=0.0, le=1.0)] = 0.02
+    bear_threshold: Annotated[float, Field(ge=-1.0, lt=0.0)] = -0.02
+    high_vol_percentile: Annotated[float, Field(gt=0.0, lt=1.0)] = 0.80
+    low_vol_percentile: Annotated[float, Field(gt=0.0, lt=1.0)] = 0.20
+
+    # Portfolio-state (optional series supplied by caller; defaults produce NaNs)
+    turnover_window: Annotated[int, Field(ge=1, le=500)] = 5
+    include_portfolio_state: bool = True
+    include_fundamentals: bool = True
+    include_regime: bool = True
+
+    # Row policy: never drop rows silently — keep warm-up / missing as explicit NaN.
+    drop_na_rows: bool = False
 
     @field_validator("causal_only")
     @classmethod
@@ -81,6 +119,30 @@ class FeatureSettings(BaseModel):
         if not value:
             raise ValueError("causal_only must remain True (look-ahead prevention)")
         return value
+
+    @field_validator("drop_na_rows")
+    @classmethod
+    def _forbid_silent_drops(cls, value: bool) -> bool:
+        if value:
+            raise ValueError(
+                "drop_na_rows must be False; warm-up/missing values stay as explicit NaNs"
+            )
+        return value
+
+    @field_validator("return_windows", "ma_windows", mode="before")
+    @classmethod
+    def _tuple_ints(cls, value: object) -> object:
+        if isinstance(value, list):
+            return tuple(int(v) for v in value)
+        return value
+
+    @model_validator(mode="after")
+    def _macd_ordering(self) -> FeatureSettings:
+        if self.macd_fast >= self.macd_slow:
+            raise ValueError("macd_fast must be < macd_slow")
+        if self.low_vol_percentile >= self.high_vol_percentile:
+            raise ValueError("low_vol_percentile must be < high_vol_percentile")
+        return self
 
 
 class TrainingSettings(BaseModel):

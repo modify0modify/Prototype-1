@@ -1,4 +1,4 @@
-.PHONY: install test lint typecheck run-smoke download-data
+.PHONY: install test lint typecheck run-smoke download-data build-features
 
 PYTHON ?= python3.12
 VENV ?= .venv
@@ -25,3 +25,6 @@ run-smoke:
 
 download-data:
 	$(PY) scripts/download_data.py --config $(CONFIG)
+
+build-features:
+	$(PY) scripts/build_features.py --config $(CONFIG)

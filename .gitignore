@@ -61,6 +61,8 @@ reports/paper_trading/*
 !reports/paper_trading/.gitkeep
 reports/data_quality/*
 !reports/data_quality/.gitkeep
+reports/feature_quality/*
+!reports/feature_quality/.gitkeep
 reports/*.db
 *.db
 *.sqlite

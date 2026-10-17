@@ -1,4 +1,4 @@
-"""Feature engineering stubs (causal transforms only)."""
+"""Feature engineering interfaces and shared FeatureSpec."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import Any, Protocol
 
 @dataclass(frozen=True, slots=True)
 class FeatureSpec:
-    """Declarative feature definition stored with checkpoints."""
+    """Declarative feature definition stored with checkpoints / manifests."""
 
     name: str
     lookback: int
@@ -26,19 +26,3 @@ class FeatureBuilder(Protocol):
     def transform(self, frame: Any) -> Any:
         """Apply a fitted transform without peeking ahead."""
         ...
-
-
-class StubFeatureBuilder:
-    """Placeholder feature builder."""
-
-    def fit(self, frame: Any) -> StubFeatureBuilder:
-        """Record that fit was called; no real statistics computed."""
-        _ = frame
-        return self
-
-    def transform(self, frame: Any) -> Any:
-        """Raise until real feature transforms are implemented."""
-        raise NotImplementedError(
-            "StubFeatureBuilder.transform: implement causal feature transforms. "
-            "Do not silently fill missing inputs."
-        )
