@@ -28,6 +28,13 @@ FORBIDDEN_LIVE_MODULES: frozenset[str] = frozenset(
     }
 )
 
+# Risk must stay agent-agnostic — only target weights cross the boundary.
+FORBIDDEN_RISK_AGENT_MODULES: frozenset[str] = frozenset(
+    {
+        "rl_trader.agents",
+    }
+)
+
 RESEARCH_PACKAGES: frozenset[str] = frozenset(
     {
         "config",
@@ -61,18 +68,27 @@ def _module_from_import(node: ast.AST) -> list[str]:
     return names
 
 
-def scan_file_for_forbidden_imports(path: Path) -> list[str]:
-    """Return forbidden live module names imported by ``path``."""
+def _scan_forbidden(path: Path, forbidden: frozenset[str]) -> list[str]:
     source = path.read_text(encoding="utf-8")
     tree = ast.parse(source, filename=str(path))
     hits: list[str] = []
     for node in ast.walk(tree):
         for name in _module_from_import(node):
-            if name in FORBIDDEN_LIVE_MODULES or any(
-                name.startswith(f"{forbidden}.") for forbidden in FORBIDDEN_LIVE_MODULES
+            if name in forbidden or any(
+                name.startswith(f"{mod}.") for mod in forbidden
             ):
                 hits.append(name)
     return sorted(set(hits))
+
+
+def scan_file_for_forbidden_imports(path: Path) -> list[str]:
+    """Return forbidden live module names imported by ``path``."""
+    return _scan_forbidden(path, FORBIDDEN_LIVE_MODULES)
+
+
+def scan_file_for_risk_agent_imports(path: Path) -> list[str]:
+    """Return agent imports found in a risk module (must be empty)."""
+    return _scan_forbidden(path, FORBIDDEN_RISK_AGENT_MODULES)
 
 
 def iter_research_python_files(package_root: Path) -> list[Path]:
@@ -107,4 +123,26 @@ def guard_live_import(caller_module: str) -> None:
     if len(parts) >= 2 and parts[0] == "rl_trader" and parts[1] in RESEARCH_PACKAGES:
         raise LiveImportBoundaryError(
             f"research module {caller_module!r} cannot import live execution/brokers"
+        )
+
+
+class RiskAgentImportBoundaryError(ImportError):
+    """Raised when the risk package imports RL agents."""
+
+
+def assert_risk_has_no_agent_imports(package_root: Path | None = None) -> None:
+    """Fail if any module under ``rl_trader.risk`` imports agents."""
+    root = package_root or Path(__file__).resolve().parents[1]
+    risk_dir = root / "risk"
+    if not risk_dir.is_dir():
+        return
+    violations: list[str] = []
+    for path in sorted(risk_dir.rglob("*.py")):
+        hits = scan_file_for_risk_agent_imports(path)
+        for hit in hits:
+            violations.append(f"{path.relative_to(root)} -> {hit}")
+    if violations:
+        joined = "; ".join(violations)
+        raise RiskAgentImportBoundaryError(
+            f"risk package must not import RL agents: {joined}"
         )

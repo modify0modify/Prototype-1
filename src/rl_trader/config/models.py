@@ -330,7 +330,7 @@ class BenchmarkSettings(BaseModel):
 
 
 class RiskSettings(BaseModel):
-    """Deterministic risk-engine limits.
+    """Deterministic risk-engine limits (independent of the RL agent).
 
     ``daily_loss_limit`` is required whenever risk is active (paper / live /
     backtest). Research configs should still set it explicitly when risk is used.
@@ -338,12 +338,30 @@ class RiskSettings(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    # Position / exposure
     max_position_size: Annotated[float, Field(gt=0.0, le=1.0)] = 0.25
     max_portfolio_exposure: Annotated[float, Field(gt=0.0, le=1.0)] = 1.0
+    max_sector_exposure: Annotated[float, Field(gt=0.0, le=1.0)] = 0.50
     min_weight: Annotated[float, Field(ge=0.0, le=1.0)] = 0.0
-    # Default set for paper-safe root defaults; may be None only in research configs.
+    min_cash_reserve: Annotated[float, Field(ge=0.0, le=1.0)] = 0.02
+    # Order / turnover
+    max_order_notional: Annotated[float, Field(gt=0.0)] = 50_000.0
+    max_daily_turnover: Annotated[float, Field(gt=0.0, le=10.0)] = 1.0
+    max_orders_per_day: Annotated[int, Field(ge=1, le=10_000)] = 50
+    # Loss / drawdown / vol
     daily_loss_limit: Annotated[float, Field(gt=0.0, le=1.0)] | None = 0.05
+    weekly_loss_limit: Annotated[float, Field(gt=0.0, le=1.0)] = 0.10
     max_drawdown_limit: Annotated[float, Field(gt=0.0, le=1.0)] = 0.20
+    max_volatility_target: Annotated[float, Field(gt=0.0, le=5.0)] = 0.35
+    max_consecutive_losses: Annotated[int, Field(ge=1, le=1000)] = 5
+    # Market data quality
+    max_data_age_seconds: Annotated[float, Field(gt=0.0)] = 300.0
+    abnormal_price_jump: Annotated[float, Field(gt=0.0, le=1.0)] = 0.20
+    max_spread_bps: Annotated[float, Field(gt=0.0, le=10_000.0)] = 50.0
+    # Identity / versioning for decision records
+    configuration_version: str = "risk-v1"
+    # Kill-switch acknowledgement phrase required for manual reset
+    kill_switch_reset_phrase: str = "MANUAL_KILL_SWITCH_RESET"
 
     @model_validator(mode="after")
     def _position_within_exposure(self) -> RiskSettings:
@@ -352,6 +370,8 @@ class RiskSettings(BaseModel):
                 "max_position_size must be <= max_portfolio_exposure "
                 f"({self.max_position_size} > {self.max_portfolio_exposure})"
             )
+        if self.min_cash_reserve + 1e-12 >= 1.0:
+            raise ValueError("min_cash_reserve must be < 1")
         return self
 
 

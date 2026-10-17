@@ -20,8 +20,21 @@ backtest:
 risk:
   max_position_size: 0.25
   max_portfolio_exposure: 1.0
+  max_sector_exposure: 0.50
+  min_cash_reserve: 0.02
+  max_order_notional: 50000.0
+  max_daily_turnover: 1.0
+  max_orders_per_day: 50
   daily_loss_limit: 0.05
+  weekly_loss_limit: 0.10
   max_drawdown_limit: 0.2
+  max_volatility_target: 0.35
+  max_consecutive_losses: 5
+  max_data_age_seconds: 300
+  abnormal_price_jump: 0.20
+  max_spread_bps: 50
+  configuration_version: risk-v1
+  kill_switch_reset_phrase: MANUAL_KILL_SWITCH_RESET
 
 # Paper credentials come from env (BROKER__PAPER_API_KEY / nested) — never live keys.
 broker:

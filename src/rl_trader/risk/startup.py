@@ -39,6 +39,10 @@ def run_risk_startup_checks(risk: RiskSettings) -> RiskStartupReport:
     daily_range_ok = (
         risk.daily_loss_limit is not None and 0.0 < risk.daily_loss_limit <= 1.0
     )
+    weekly_ok = 0.0 < risk.weekly_loss_limit <= 1.0
+    cash_ok = 0.0 <= risk.min_cash_reserve < 1.0
+    sector_ok = 0.0 < risk.max_sector_exposure <= 1.0
+    phrase_ok = bool(risk.kill_switch_reset_phrase.strip())
 
     checks = (
         RiskStartupCheck(
@@ -54,6 +58,11 @@ def run_risk_startup_checks(risk: RiskSettings) -> RiskStartupReport:
             name="daily_loss_limit_range",
             passed=daily_range_ok,
             detail=f"daily_loss_limit={risk.daily_loss_limit}",
+        ),
+        RiskStartupCheck(
+            name="weekly_loss_limit_range",
+            passed=weekly_ok,
+            detail=f"weekly_loss_limit={risk.weekly_loss_limit}",
         ),
         RiskStartupCheck(
             name="position_within_exposure",
@@ -77,6 +86,21 @@ def run_risk_startup_checks(risk: RiskSettings) -> RiskStartupReport:
             name="max_drawdown_range",
             passed=drawdown_ok,
             detail=f"max_drawdown_limit={risk.max_drawdown_limit}",
+        ),
+        RiskStartupCheck(
+            name="min_cash_reserve_range",
+            passed=cash_ok,
+            detail=f"min_cash_reserve={risk.min_cash_reserve}",
+        ),
+        RiskStartupCheck(
+            name="max_sector_exposure_range",
+            passed=sector_ok,
+            detail=f"max_sector_exposure={risk.max_sector_exposure}",
+        ),
+        RiskStartupCheck(
+            name="kill_switch_reset_phrase",
+            passed=phrase_ok,
+            detail="kill_switch_reset_phrase configured",
         ),
     )
     return RiskStartupReport(ok=all(c.passed for c in checks), checks=checks)

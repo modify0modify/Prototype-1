@@ -7,6 +7,7 @@ from pathlib import Path
 from rl_trader.utils.boundaries import (
     FORBIDDEN_LIVE_MODULES,
     assert_research_has_no_live_imports,
+    assert_risk_has_no_agent_imports,
     scan_file_for_forbidden_imports,
 )
 
@@ -14,6 +15,11 @@ from rl_trader.utils.boundaries import (
 def test_research_surface_has_no_live_imports() -> None:
     package_root = Path(__file__).resolve().parents[2] / "src" / "rl_trader"
     assert_research_has_no_live_imports(package_root)
+
+
+def test_risk_surface_has_no_agent_imports() -> None:
+    package_root = Path(__file__).resolve().parents[2] / "src" / "rl_trader"
+    assert_risk_has_no_agent_imports(package_root)
 
 
 def test_forbidden_modules_documented() -> None:
