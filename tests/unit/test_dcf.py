@@ -222,9 +222,10 @@ def test_feature_asof_hides_dcf_before_publication() -> None:
     idx = pd.bdate_range("2022-01-03", periods=40, tz="UTC")
     aligned = align_fundamentals_asof(idx, events)
     first_pub = min(e.publication_date for e in events)
-    before = aligned.loc[aligned.index.date < first_pub, "estimated_intrinsic_value"]
+    # Visible only from publication_date + 1 calendar day (UTC).
+    before = aligned.loc[aligned.index.date <= first_pub, "estimated_intrinsic_value"]
     assert before.isna().all()
-    after = aligned.loc[aligned.index.date >= first_pub, "estimated_intrinsic_value"]
+    after = aligned.loc[aligned.index.date > first_pub, "estimated_intrinsic_value"]
     assert after.notna().any()
 
 

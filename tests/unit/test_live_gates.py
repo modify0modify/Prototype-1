@@ -46,6 +46,7 @@ def _live_base(tmp_path: Path, **overrides: object) -> AppSettings:
         "_env_file": None,
         "app_mode": RuntimeMode.LIVE,
         "live_trading_enabled": True,
+        "data": DataSettings(survivorship_bias_acknowledged=True),
         "broker": BrokerSettings(environment="live"),
         "risk": RiskSettings(
             max_position_size=0.1,
@@ -71,6 +72,17 @@ def _failed_names(settings: AppSettings) -> set[str]:
 
 def test_confirmation_phrase_constant() -> None:
     assert LIVE_TRADING_CONFIRMATION_PHRASE == "I_UNDERSTAND_THIS_ENABLES_LIVE_BROKER_ORDERS"
+
+
+def test_gate_survivorship_universe_policy(tmp_path: Path) -> None:
+    settings = _live_base(
+        tmp_path,
+        data=DataSettings(
+            point_in_time_universe=False,
+            survivorship_bias_acknowledged=False,
+        ),
+    )
+    assert "survivorship_universe_policy" in _failed_names(settings)
 
 
 def test_all_gates_pass_allows_live(tmp_path: Path) -> None:

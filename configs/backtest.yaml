@@ -18,7 +18,9 @@ environment:
   bid_ask_spread_bps: 2.0
   slippage_bps: 2.0
   market_impact_coeff: 0.1
-  execution_delay_bars: 0
+  execution_delay_bars: 1
+  allow_same_bar_execution: false
+  costs_already_in_return: true
 
 backtest:
   initial_cash: 100000.0

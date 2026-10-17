@@ -13,6 +13,7 @@ All of the following must pass:
 8. Explicit maximum live capital (> 0)
 9. Explicit maximum order value (> 0)
 10. Explicit daily loss limit in risk settings
+11. Point-in-time universe **or** explicit survivorship-bias acknowledgement
 """
 
 from __future__ import annotations
@@ -160,6 +161,21 @@ def evaluate_live_activation(settings: AppSettings) -> ActivationReport:
                 f"daily_loss_limit={settings.risk.daily_loss_limit}"
                 if daily_ok
                 else "daily_loss_limit missing"
+            ),
+        ),
+        GuardCheck(
+            name="survivorship_universe_policy",
+            passed=(
+                settings.data.point_in_time_universe
+                or settings.data.survivorship_bias_acknowledged
+            ),
+            detail=(
+                "PIT universe or survivorship acknowledgement present"
+                if (
+                    settings.data.point_in_time_universe
+                    or settings.data.survivorship_bias_acknowledged
+                )
+                else "static universe without survivorship acknowledgement"
             ),
         ),
     )

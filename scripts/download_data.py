@@ -48,6 +48,18 @@ def main(argv: list[str] | None = None) -> int:
     configure_logging(settings.log_level, json_logs=settings.log_json)
     logger = get_logger("rl_trader.scripts.download_data")
 
+    from rl_trader.data.validation import assert_survivorship_policy
+
+    try:
+        assert_survivorship_policy(
+            point_in_time_universe=settings.data.point_in_time_universe,
+            survivorship_bias_acknowledged=settings.data.survivorship_bias_acknowledged,
+            require_acknowledgement=True,
+        )
+    except ValueError as exc:
+        logger.error("survivorship policy: %s", exc)
+        return 2
+
     symbols = None
     if args.symbols:
         symbols = tuple(s.strip().upper() for s in args.symbols.split(",") if s.strip())

@@ -359,38 +359,28 @@ def _run_single_fold(
             test_scaled,
         )
         ckpt_dir = fold_dir / "checkpoint"
-        spec = get_algorithm_spec(backtest.algorithm)
-        prev_weights = (
-            prev_checkpoint / spec.model_filename
-            if prev_checkpoint is not None
-            else None
-        )
+        continue_from: Path | None = None
         if (
             backtest.retrain_mode == "fine_tune"
-            and prev_weights is not None
-            and prev_weights.exists()
+            and prev_checkpoint is not None
+            and (
+                prev_checkpoint
+                / get_algorithm_spec(backtest.algorithm).model_filename
+            ).exists()
         ):
-            from rl_trader.agents.trainer import make_vec_env
-
-            ckpt_dir.mkdir(parents=True, exist_ok=True)
-            train_env = make_vec_env(train_scaled, env_settings, seed=training.seed)
-            model = spec.sb3_cls.load(str(prev_weights), device=training.device)
-            model.set_env(train_env)
-            model.learn(total_timesteps=backtest.train_timesteps, progress_bar=False)
-            model.save(str((ckpt_dir / spec.model_filename).with_suffix("")))
-            train_env.close()
-            scaler.save(ckpt_dir)
-            checkpoint = ckpt_dir
-        else:
-            result = train_agent(
-                splits,
-                training=training,
-                environment=env_settings,
-                features=feature_settings,
-                output_dir=ckpt_dir,
-                algorithm=backtest.algorithm,
-            )
-            checkpoint = result.output_dir
+            # Fine-tune from the *previous* fold only (never a future checkpoint),
+            # still selecting best weights on this fold's validation via EvalCallback.
+            continue_from = prev_checkpoint
+        result = train_agent(
+            splits,
+            training=training,
+            environment=env_settings,
+            features=feature_settings,
+            output_dir=ckpt_dir,
+            algorithm=backtest.algorithm,
+            continue_from=continue_from,
+        )
+        checkpoint = result.output_dir
         policy = _load_sb3_policy(ckpt_dir, backtest.algorithm, device=training.device)
     else:
         policy = EqualWeightPolicy(test_scaled.n_assets, env_settings.max_weight)

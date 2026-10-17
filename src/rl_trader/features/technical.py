@@ -91,8 +91,19 @@ def compute_technical_features(
 ) -> pd.DataFrame:
     """Compute technical features; index aligned to ``ohlcv`` (rows never dropped)."""
     close = _price_series(ohlcv)
-    high = ohlcv["high"].astype(float) if "high" in ohlcv.columns else close
-    low = ohlcv["low"].astype(float) if "low" in ohlcv.columns else close
+    # Prefer split/dividend-adjusted OHLC so ATR/ranges match close_adj units.
+    if "high_adj" in ohlcv.columns:
+        high = ohlcv["high_adj"].astype(float)
+    elif "high" in ohlcv.columns:
+        high = ohlcv["high"].astype(float)
+    else:
+        high = close
+    if "low_adj" in ohlcv.columns:
+        low = ohlcv["low_adj"].astype(float)
+    elif "low" in ohlcv.columns:
+        low = ohlcv["low"].astype(float)
+    else:
+        low = close
     volume = ohlcv["volume"].astype(float) if "volume" in ohlcv.columns else pd.Series(
         np.nan, index=ohlcv.index
     )

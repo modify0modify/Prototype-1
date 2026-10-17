@@ -78,8 +78,9 @@ def align_fundamentals_asof(
 ) -> pd.DataFrame:
     """Point-in-time align fundamentals with ``merge_asof`` (backward).
 
-    A release with ``publication_date = D`` is visible only for feature rows
-    with timestamp ``>= D``. Earlier dates stay NaN — no backfill into the past.
+    A release with ``publication_date = D`` is first visible on calendar day
+    ``D + 1`` (UTC). Same-day / after-hours use at midnight UTC would otherwise
+    treat filings as known at the open of ``D``. Earlier dates stay NaN.
     """
     _ = valuation  # reserved for future DCF recomputation hooks
     out = pd.DataFrame(index=index)
@@ -94,6 +95,8 @@ def align_fundamentals_asof(
     right_ts = pd.DatetimeIndex(pd.DatetimeIndex(fund.index).tz_convert("UTC")).as_unit(
         "ns"
     )
+    # Next-day lag: publication on D is not tradable until D+1.
+    right_ts = right_ts + pd.Timedelta(days=1)
     left = pd.DataFrame({"ts": left_ts}).sort_values("ts")
     right = fund.copy()
     right.index = right_ts

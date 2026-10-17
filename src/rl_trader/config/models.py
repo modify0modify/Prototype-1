@@ -33,6 +33,10 @@ class DataSettings(BaseModel):
     api_key: SecretStr | None = None
     api_secret: SecretStr | None = None
     allow_missing_bars: bool = False  # silent fills are never allowed when False
+    # Static ticker lists are survivor-biased unless a true point-in-time universe
+    # is supplied. Research may acknowledge this; paper/live must not ignore it.
+    point_in_time_universe: bool = False
+    survivorship_bias_acknowledged: bool = False
 
     @field_validator("timezone")
     @classmethod
@@ -227,19 +231,36 @@ class EnvironmentSettings(BaseModel):
     bid_ask_spread_bps: Annotated[float, Field(ge=0.0, le=1000.0)] = 2.0
     slippage_bps: Annotated[float, Field(ge=0.0, le=1000.0)] = 1.0
     market_impact_coeff: Annotated[float, Field(ge=0.0, le=10.0)] = 0.1
-    # 0 = fill at decision-bar price; >0 queues target weights.
-    execution_delay_bars: Annotated[int, Field(ge=0, le=5)] = 0
+    # Default 1: decide using bar-t information, fill at bar-(t+delay) prices.
+    # delay=0 is same-bar close fill (look-ahead vs close features) and requires
+    # ``allow_same_bar_execution=True``.
+    execution_delay_bars: Annotated[int, Field(ge=0, le=5)] = 1
+    allow_same_bar_execution: bool = False
     # Observation / reward helpers
     recent_returns_lookback: Annotated[int, Field(ge=1, le=252)] = 5
     # Reward = return - penalties (configurable risk-adjusted).
     drawdown_penalty: Annotated[float, Field(ge=0.0)] = 0.1
     turnover_penalty: Annotated[float, Field(ge=0.0)] = 0.01
+    # When True (default), period return already embeds simulated costs — do not
+    # subtract ``transaction_cost_penalty * cost_frac`` again (reward hacking /
+    # double-count risk).
+    costs_already_in_return: bool = True
     transaction_cost_penalty: Annotated[float, Field(ge=0.0)] = 1.0
     concentration_penalty: Annotated[float, Field(ge=0.0)] = 0.0
     volatility_penalty: Annotated[float, Field(ge=0.0)] = 0.0
     # Safe termination thresholds
     max_drawdown_terminate: Annotated[float, Field(gt=0.0, le=1.0)] = 0.5
     min_portfolio_value: Annotated[float, Field(gt=0.0)] = 1.0
+
+    @model_validator(mode="after")
+    def _execution_delay_gate(self) -> EnvironmentSettings:
+        if self.execution_delay_bars == 0 and not self.allow_same_bar_execution:
+            raise ValueError(
+                "execution_delay_bars=0 enables same-bar fill at close while "
+                "observations may include that close — set "
+                "allow_same_bar_execution=True only if this look-ahead is intentional"
+            )
+        return self
 
 
 class BacktestSettings(BaseModel):

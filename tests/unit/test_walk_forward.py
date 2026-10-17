@@ -242,13 +242,16 @@ def test_instability_and_dispersion_flags() -> None:
 
 
 def test_expanding_window_mode() -> None:
-    episode = _synthetic_episode(90)
+    episode = _synthetic_episode(120)
     plan = build_walk_forward_plan(
         episode, _wf_settings(window_mode="expanding", walk_forward_folds=3)
     )
     assert plan.folds[0].train_start_idx == 0
     assert plan.folds[1].train_start_idx == 0
-    assert plan.folds[1].train_end_idx > plan.folds[0].train_end_idx
+    # Purged expanding: next train ends at previous test_end (not prior test as val).
+    assert plan.folds[1].train_end_idx == plan.folds[0].test_end_idx
+    assert plan.folds[1].val_start_idx == plan.folds[0].test_end_idx
+    assert plan.folds[1].val_start_idx >= plan.folds[0].test_end_idx
 
 
 def test_fold_assert_detects_overlap() -> None:

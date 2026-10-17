@@ -32,6 +32,7 @@ def _settings(**overrides: object) -> EnvironmentSettings:
         "slippage_bps": 5.0,
         "market_impact_coeff": 0.05,
         "execution_delay_bars": 0,
+        "allow_same_bar_execution": True,
         "recent_returns_lookback": 5,
         "drawdown_penalty": 0.1,
         "turnover_penalty": 0.05,

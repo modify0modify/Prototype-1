@@ -110,13 +110,15 @@ def build_walk_forward_plan(
     folds: list[WalkForwardFold] = []
     fold_id = 0
     origin = 0
+    # Expanding: next train ends at previous test_end (purge prior test from val).
+    expanding_train_end = train_b
     while True:
         if settings.window_mode == "rolling":
             train_start = origin
             train_end = train_start + train_b
-        else:  # expanding
+        else:
             train_start = 0
-            train_end = train_b + origin
+            train_end = expanding_train_end
         val_start = train_end
         val_end = val_start + val_b
         test_start = val_end
@@ -143,7 +145,11 @@ def build_walk_forward_plan(
         fold_id += 1
         if fold_id >= settings.walk_forward_folds:
             break
-        origin += step
+        if settings.window_mode == "rolling":
+            origin += step
+        else:
+            # Absorb prior test into train; never reuse it as the next val window.
+            expanding_train_end = test_end
 
     if not folds:
         raise ValueError("walk-forward produced zero folds")

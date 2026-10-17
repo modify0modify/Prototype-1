@@ -115,6 +115,15 @@ def main(argv: list[str] | None = None) -> int:
         help="Use a tiny synthetic episode (smoke training; no network)",
     )
     parser.add_argument(
+        "--allow-synthetic",
+        action="store_true",
+        help=(
+            "Permit synthetic prices on configured calendar dates "
+            "(otherwise non-fixture training is refused — prevents mistaking "
+            "RNG paths for market history)"
+        ),
+    )
+    parser.add_argument(
         "--timesteps",
         type=int,
         default=None,
@@ -203,12 +212,21 @@ def main(argv: list[str] | None = None) -> int:
             training.algorithm,
         )
     else:
+        if not args.allow_synthetic:
+            logger.error(
+                "refusing train without market data: non-fixture path would build "
+                "synthetic prices on real calendar dates (looks like history). "
+                "Use --fixture for labelled smoke data, or --allow-synthetic to "
+                "acknowledge RNG panels, or load processed OHLCV first."
+            )
+            return 2
         episode = _episode_for_configured_dates(
             training, settings.data.universe, training.seed
         )
         splits = split_episode_by_dates(episode, training)
-        logger.info(
-            "date-split train=%s..%s val=%s..%s test=%s..%s bars=%d",
+        logger.warning(
+            "SYNTHETIC date-split train=%s..%s val=%s..%s test=%s..%s bars=%d "
+            "(not market history)",
             training.train_start,
             training.train_end,
             training.val_start,

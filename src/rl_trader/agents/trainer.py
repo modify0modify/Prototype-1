@@ -152,6 +152,7 @@ def train_agent(
     output_dir: Path | None = None,
     access_guard: SplitAccessGuard | None = None,
     algorithm: str | None = None,
+    continue_from: Path | None = None,
 ) -> TrainResult:
     """Train PPO/SAC/TD3 on train; early-stop / select on validation only.
 
@@ -211,7 +212,18 @@ def train_agent(
         verbose=0,
     )
 
-    model = spec.build(train_env, training)
+    if continue_from is not None:
+        weights = Path(continue_from) / spec.model_filename
+        if not weights.exists():
+            raise FileNotFoundError(
+                f"continue_from missing weights: {weights} "
+                "(refusing to silently train from scratch under a fine-tune path)"
+            )
+        # Load prior fold weights — never a future checkpoint (caller supplies path).
+        model = spec.sb3_cls.load(str(weights), device=training.device)
+        model.set_env(train_env)
+    else:
+        model = spec.build(train_env, training)
     model.learn(
         total_timesteps=training.total_timesteps,
         callback=eval_callback,

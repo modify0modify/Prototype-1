@@ -49,6 +49,7 @@ def _env(**overrides: object) -> EnvironmentSettings:
         "slippage_bps": 1.0,
         "market_impact_coeff": 0.05,
         "execution_delay_bars": 0,
+        "allow_same_bar_execution": True,
     }
     base.update(overrides)
     return EnvironmentSettings(**base)  # type: ignore[arg-type]

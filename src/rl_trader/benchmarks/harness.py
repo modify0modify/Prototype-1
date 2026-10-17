@@ -89,6 +89,13 @@ def run_strategy(
     costs: list[float] = []
     exposures: list[float] = []
     n_trades = 0
+    # Match PortfolioEnv: delay>=1 queues targets so close-informed decisions
+    # do not fill at the same bar's close.
+    from collections import deque
+
+    pending: deque[np.ndarray | None] = deque()
+    for _ in range(max(0, int(env_settings.execution_delay_bars))):
+        pending.append(None)
 
     for t in range(start_t, panel.n_bars - 1):
         raw = strategy.target_weights(t)
@@ -97,13 +104,20 @@ def run_strategy(
         else:
             # Buy-and-hold: entry already respected max_weight; allow drift above cap.
             target = _sanitize_long_weights(raw)
+        pending.append(target)
+        delayed = pending.popleft()
+        exec_weights = (
+            delayed
+            if delayed is not None
+            else np.zeros(panel.n_assets, dtype=np.float64)
+        )
         prices_t = panel.prices[t]
         nav_before = portfolio_nav(cash, shares, prices_t)
         fill = simulate_rebalance(
             cash=cash,
             shares=shares,
             prices=prices_t,
-            target_weights=target,
+            target_weights=exec_weights,
             settings=env_settings,
             enforce_max_weight=strategy.enforce_max_weight,
         )

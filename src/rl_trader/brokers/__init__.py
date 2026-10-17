@@ -12,7 +12,7 @@ from rl_trader.brokers.guards import (
     evaluate_live_activation,
     is_live_trading_blocked,
 )
-from rl_trader.brokers.paper import PaperBroker
+from rl_trader.brokers.paper import PaperBroker, PaperTradingDisabledError
 
 __all__ = [
     "ActivationReport",
@@ -20,6 +20,7 @@ __all__ = [
     "BrokerFill",
     "LiveTradingBlockedError",
     "PaperBroker",
+    "PaperTradingDisabledError",
     "assert_live_trading_allowed",
     "evaluate_live_activation",
     "is_live_trading_blocked",

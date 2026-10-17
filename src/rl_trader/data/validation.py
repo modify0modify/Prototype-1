@@ -147,5 +147,34 @@ def validate_ohlcv_frame(
             warnings.append(f"OHLC inconsistencies in {n_inconsistent} rows")
 
     metadata["raw_columns_present"] = [c for c in RAW_OHLCV_COLUMNS if c in frame.columns]
+
+    # Possible delisting / premature series end (survivor lists often hide this).
+    if end is not None and idx_dates[-1] < end:
+        gap_days = (end - idx_dates[-1]).days
+        metadata["series_ends_before_requested_end_days"] = gap_days
+        if gap_days >= 5:
+            warnings.append(
+                f"series ends {gap_days} calendar days before requested end "
+                f"({idx_dates[-1]} < {end}) — possible delisting / halt; "
+                "static universes are survivor-biased if inactive names are omitted"
+            )
+
     ok = not errors
     return ValidationReport(ok=ok, errors=errors, warnings=warnings, metadata=metadata)
+
+
+def assert_survivorship_policy(
+    *,
+    point_in_time_universe: bool,
+    survivorship_bias_acknowledged: bool,
+    require_acknowledgement: bool = True,
+) -> None:
+    """Refuse silent survivor-only universes when acknowledgement is required."""
+    if point_in_time_universe:
+        return
+    if require_acknowledgement and not survivorship_bias_acknowledged:
+        raise ValueError(
+            "static universe is survivor-biased (no point-in-time membership). "
+            "Set data.point_in_time_universe=true when using a PIT universe, or "
+            "data.survivorship_bias_acknowledged=true for research-only runs."
+        )

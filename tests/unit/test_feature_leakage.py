@@ -122,10 +122,11 @@ def test_fundamentals_not_backfilled_before_publication() -> None:
     features, _ = build_feature_matrix(
         ohlcv, settings, symbol="MSFT", fundamental_events=events
     )
-    before = features.loc[features.index.date < pub, "revenue_growth"]
+    # Same-day publication must not be visible (next-day lag).
+    before = features.loc[features.index.date <= pub, "revenue_growth"]
     assert before.isna().all()
-    on_or_after = features.loc[features.index.date >= pub, "revenue_growth"]
-    assert np.allclose(on_or_after.to_numpy(dtype=float), 0.15)
+    after = features.loc[features.index.date > pub, "revenue_growth"]
+    assert np.allclose(after.to_numpy(dtype=float), 0.15)
 
 
 def test_pipeline_preserves_row_count(tmp_path: Path) -> None:

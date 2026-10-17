@@ -34,8 +34,12 @@ def compute_reward(
 ) -> RewardBreakdown:
     """Risk-adjusted reward — uses only information known at the reward time.
 
-    ``reward = r - λ_dd·DD - λ_to·turnover - λ_tc·cost_frac
+    ``reward = r - λ_dd·DD - λ_to·turnover [- λ_tc·cost_frac]
                - λ_conc·concentration - λ_vol·realized_vol``
+
+    When ``settings.costs_already_in_return`` is True (default), ``r`` already
+    nets simulated transaction costs, so the explicit ``λ_tc`` term is skipped
+    to avoid double-counting (reward-hacking / distorted learning signal).
     """
     w = np.asarray(weights, dtype=np.float64)
     exposure = float(np.sum(w))
@@ -55,7 +59,12 @@ def compute_reward(
 
     dd_pen = settings.drawdown_penalty * max(0.0, float(drawdown))
     to_pen = settings.turnover_penalty * max(0.0, float(turnover))
-    tc_pen = settings.transaction_cost_penalty * max(0.0, float(transaction_cost_frac))
+    if settings.costs_already_in_return:
+        tc_pen = 0.0
+    else:
+        tc_pen = settings.transaction_cost_penalty * max(
+            0.0, float(transaction_cost_frac)
+        )
     conc_pen = settings.concentration_penalty * concentration
     vol_pen = settings.volatility_penalty * realized_vol
 
