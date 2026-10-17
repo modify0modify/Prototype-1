@@ -1,10 +1,11 @@
-.PHONY: install test lint typecheck run-smoke download-data build-features run-benchmarks train-agent train-smoke compare-agents walk-forward walk-forward-smoke
+.PHONY: install test lint typecheck run-smoke download-data build-features run-benchmarks train-agent train-smoke compare-agents walk-forward walk-forward-smoke run-paper run-paper-dry
 
 PYTHON ?= python3.12
 VENV ?= .venv
 PIP := $(VENV)/bin/pip
 PY := $(VENV)/bin/python
 CONFIG ?= configs/research.yaml
+PAPER_CONFIG ?= configs/paper.yaml
 ALGORITHM ?= ppo
 
 install:
@@ -47,3 +48,9 @@ walk-forward:
 
 walk-forward-smoke:
 	$(PY) scripts/run_walk_forward.py --config $(CONFIG) --fixture --no-train
+
+run-paper:
+	$(PY) scripts/run_paper_trader.py --config $(PAPER_CONFIG) --demo
+
+run-paper-dry:
+	$(PY) scripts/run_paper_trader.py --config $(PAPER_CONFIG) --demo --dry-run

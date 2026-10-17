@@ -222,7 +222,22 @@ make test
 make lint
 make typecheck
 make run-smoke
+make run-paper-dry   # prospective paper cycle, no simulated orders
+make run-paper       # prospective paper cycle with PaperBroker fills
 ```
+
+## Prospective paper trading
+
+```bash
+python scripts/run_paper_trader.py --config configs/paper.yaml --demo
+python scripts/run_paper_trader.py --config configs/paper.yaml --demo --dry-run
+```
+
+Loop: paper-mode gate → approved model (frozen for `evaluation_period_id`) → feature
+manifest check → market/features freshness → agent targets → risk engine →
+`PaperBroker` (skipped on `--dry-run`) → reconcile → decisions/metrics/alerts.
+State under `reports/paper_trading/` (`heartbeat.json`, `decisions.jsonl`, lock file).
+**No live broker.** Retrain is a separate config hook and does not run in-loop.
 
 ## Top-level layout
 
@@ -251,6 +266,7 @@ make run-smoke
 | `validation` | feature-match checks + walk-forward plans |
 | `portfolio` | target portfolio types |
 | `execution` | paper executor (live executor gated, not re-exported) |
+| `paper_trading` | prospective paper service loop (lock, heartbeat, decisions) |
 | `risk` | deterministic approve / reject / resize |
 | `brokers` | shared `BrokerAdapter`; persistent `PaperBroker` sim; live stub only |
 | `monitoring` | structured logging + audit recorder |

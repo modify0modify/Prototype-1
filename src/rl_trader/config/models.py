@@ -389,6 +389,37 @@ class BrokerSettings(BaseModel):
     live_base_url: str | None = None
 
 
+class PaperTradingSettings(BaseModel):
+    """Prospective paper-trading service runtime settings.
+
+    The model is frozen for an evaluation period — scheduled retrain is a
+    separate hook and never runs inside the decision loop.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    state_dir: Path = Path("reports/paper_trading")
+    broker_data_dir: Path = Path("data/interim/paper_broker")
+    lock_filename: str = "paper_trader.lock"
+    heartbeat_filename: str = "heartbeat.json"
+    decisions_filename: str = "decisions.jsonl"
+    metrics_filename: str = "metrics.json"
+    alerts_filename: str = "alerts.jsonl"
+    # Freshness gate — shut down safely when market data is older than this.
+    max_data_age_seconds: Annotated[float, Field(gt=0.0, le=86_400.0)] = 300.0
+    # Stable id for the frozen evaluation window (no intra-period retrain).
+    evaluation_period_id: str = "default"
+    # Optional cron-like hint for an external scheduler (not executed here).
+    retrain_schedule: str | None = None
+    enable_scheduled_retrain_hook: bool = False
+    # When True, use the synthetic fixture market feed (tests / smoke).
+    use_fixture_market_data: bool = False
+    commission_bps: Annotated[float, Field(ge=0.0, le=1000.0)] = 1.0
+    spread_bps: Annotated[float, Field(ge=0.0, le=1000.0)] = 2.0
+    slippage_bps: Annotated[float, Field(ge=0.0, le=1000.0)] = 1.0
+    initial_cash: Annotated[float, Field(gt=0.0)] = 100_000.0
+
+
 class MonitoringSettings(BaseModel):
     """Logging and audit settings — never log secret values."""
 

@@ -40,6 +40,25 @@ risk:
 broker:
   environment: paper
 
+# Prospective paper-trading service (frozen model for evaluation_period_id).
+paper_trading:
+  state_dir: reports/paper_trading
+  broker_data_dir: data/interim/paper_broker
+  lock_filename: paper_trader.lock
+  heartbeat_filename: heartbeat.json
+  decisions_filename: decisions.jsonl
+  metrics_filename: metrics.json
+  alerts_filename: alerts.jsonl
+  max_data_age_seconds: 300
+  evaluation_period_id: paper-default
+  retrain_schedule: null
+  enable_scheduled_retrain_hook: false
+  use_fixture_market_data: true
+  commission_bps: 1.0
+  spread_bps: 2.0
+  slippage_bps: 1.0
+  initial_cash: 100000.0
+
 monitoring:
   log_level: INFO
   log_json: false

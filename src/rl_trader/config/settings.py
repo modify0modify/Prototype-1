@@ -25,6 +25,7 @@ from rl_trader.config.models import (
     FundamentalValuationSettings,
     LiveTradingSettings,
     MonitoringSettings,
+    PaperTradingSettings,
     RiskSettings,
     TrainingSettings,
 )
@@ -69,6 +70,7 @@ class AppSettings(BaseSettings):
     benchmarks: BenchmarkSettings = Field(default_factory=BenchmarkSettings)
     risk: RiskSettings = Field(default_factory=RiskSettings)
     broker: BrokerSettings = Field(default_factory=BrokerSettings)
+    paper_trading: PaperTradingSettings = Field(default_factory=PaperTradingSettings)
     monitoring: MonitoringSettings = Field(default_factory=MonitoringSettings)
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     fundamentals: FundamentalValuationSettings = Field(

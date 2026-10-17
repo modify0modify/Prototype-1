@@ -24,6 +24,7 @@ from rl_trader.config.models import (
     FundamentalValuationSettings,
     LiveTradingSettings,
     MonitoringSettings,
+    PaperTradingSettings,
     RiskSettings,
     TrainingSettings,
 )
@@ -52,6 +53,7 @@ __all__ = [
     "LiveTradingBlockedError",
     "LiveTradingSettings",
     "MonitoringSettings",
+    "PaperTradingSettings",
     "RiskSettings",
     "RuntimeMode",
     "Settings",

@@ -1,6 +1,10 @@
 {
   "approved": true,
   "model_id": "example-approved-model",
+  "model_version": "1",
+  "algorithm": "stub",
+  "n_assets": 2,
+  "checkpoint_dir": "models/checkpoints/example-approved-model",
   "approved_at": "2026-01-01T00:00:00Z",
-  "notes": "Copy to manifest.json only after risk sign-off. Placeholder — not a live approval."
+  "notes": "Copy to manifest.json only after risk sign-off. Placeholder — not a live approval. Point checkpoint_dir at a verified training checkpoint; use algorithm stub only for smoke demos."
 }
