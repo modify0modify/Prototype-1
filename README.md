@@ -191,13 +191,39 @@ make build-features
 
 ## Multi-algo training (PPO / SAC / TD3)
 
+**Default path uses real processed OHLCV** (and builds causal features from it when
+`data/processed/features/` is empty). There is **no silent synthetic fallback**.
+`--fixture` (CI smoke) and `--allow-synthetic` (explicit RNG panels) are opt-ins only.
+
 ```bash
-python scripts/train_agent.py --config configs/research.yaml --algorithm ppo
+# 1) Download cleaned bars covering training.train_start .. training.test_end
+python scripts/download_data.py --config configs/training.yaml
+# 2) Optional: persist feature parquets (train can also build them in-process)
+python scripts/build_features.py --config configs/training.yaml
+# 3) Train (scalers fit on train only; select on val; test report-only)
+python scripts/train_agent.py --config configs/training.yaml --algorithm ppo
+
+# Smoke / CI (labelled synthetic — not market history)
 python scripts/train_agent.py --config configs/research.yaml --algorithm sac --fixture
 make train-smoke ALGORITHM=td3
 make compare-agents   # smoke compare + random-policy control → reports/agent_comparison/
 make walk-forward-smoke   # synthetic walk-forward (no train) → reports/walk_forward/
 ```
+
+### RunPod / GPU training
+
+1. Install: `python3.12 -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"`
+2. Ensure `training.device: cuda` in `configs/training.yaml` (or keep `cpu` for small runs).
+3. Download → optional features → train:
+
+```bash
+python scripts/download_data.py --config configs/training.yaml
+python scripts/build_features.py --config configs/training.yaml   # optional
+python scripts/train_agent.py --config configs/training.yaml --algorithm ppo
+```
+
+If OHLCV is missing, incomplete, or ends before `test_end`, training exits with a
+clear error (download / extend `data.start_date`–`end_date`). Live trading is never enabled.
 
 ### Walk-forward validation
 

@@ -79,8 +79,10 @@ cp .env.example .env
 ### Data download
 
 ```bash
+# Quick research smoke window (short calendar):
 make download-data CONFIG=configs/research.yaml
-# or: python scripts/download_data.py --config configs/research.yaml
+# Real training window (must cover training.train_start .. training.test_end):
+python scripts/download_data.py --config configs/training.yaml
 ```
 
 ### Testing
@@ -94,9 +96,19 @@ make run-smoke
 
 ### Training / evaluation / walk-forward
 
+Default non-fixture training loads **processed OHLCV** (builds features from cleaned
+bars when feature parquets are absent). Missing/stale data fails clearly — no silent
+synthetic fallback. `--fixture` / `--allow-synthetic` remain explicit opt-ins.
+
 ```bash
-make train-smoke                    # fixture training smoke
-make train-agent ALGORITHM=ppo
+make train-smoke                    # fixture training smoke (still synthetic)
+# Real-data path (CPU):
+python scripts/download_data.py --config configs/training.yaml
+python scripts/build_features.py --config configs/training.yaml   # optional
+python scripts/train_agent.py --config configs/training.yaml --algorithm ppo
+# GPU / RunPod: set training.device: cuda in configs/training.yaml, then:
+python scripts/train_agent.py --config configs/training.yaml --algorithm ppo
+make train-agent CONFIG=configs/training.yaml ALGORITHM=ppo
 python scripts/evaluate_agent.py --config configs/research.yaml
 make walk-forward-smoke
 make walk-forward
