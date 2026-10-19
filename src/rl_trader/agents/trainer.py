@@ -31,7 +31,7 @@ from rl_trader.agents.manifest import (
     save_training_manifest,
 )
 from rl_trader.agents.registry import get_algorithm_spec
-from rl_trader.agents.scaling import FeatureScaler
+from rl_trader.agents.scaling import FeatureScaler, episode_with_finite_features
 from rl_trader.agents.splits import SplitEpisodes
 from rl_trader.config.models import (
     EnvironmentSettings,
@@ -177,17 +177,17 @@ def train_agent(
     feature_specs = feature_specs_from_episode(splits.train, feature_settings)
     algo_hparams = spec.hyperparameters(training)
 
-    # --- Scaler: TRAIN ONLY ---
+    # --- Scaler: TRAIN ONLY (NaNs stay until fit; zero only for env / after transform) ---
     scaler = FeatureScaler()
     if training.normalize_features:
         guard.note_scaler_fit("train")
         train_episode = scaler.fit_transform(splits.train, split="train")
         val_episode = scaler.transform(splits.validation)
     else:
-        train_episode = splits.train
-        val_episode = splits.validation
         scaler.fit(splits.train, split="train")
         guard.note_scaler_fit("train")
+        train_episode = episode_with_finite_features(splits.train)
+        val_episode = episode_with_finite_features(splits.validation)
 
     # --- Envs: train + validation only during fitting ---
     guard.note_env("train")
@@ -261,7 +261,7 @@ def train_agent(
         if training.normalize_features:
             test_episode = scaler.transform(splits.test)
         else:
-            test_episode = splits.test
+            test_episode = episode_with_finite_features(splits.test)
         guard.note_env("test")
         test_env = make_vec_env(test_episode, environment, seed=training.seed + 2)
         mean_r, _std_r = evaluate_policy(

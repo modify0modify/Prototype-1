@@ -71,7 +71,7 @@ def _write_training_config(path: Path, processed: Path, features_dir: Path) -> N
             "universe": ["SPY", "QQQ"],
             "provider": "yfinance",
             "timezone": "UTC",
-            "start_date": "2020-01-02",
+            "start_date": "2019-11-01",
             "end_date": "2020-05-29",
             "processed_dir": str(processed),
             "raw_dir": str(processed.parent / "raw"),
@@ -161,7 +161,8 @@ def test_train_agent_uses_real_loader_when_fixtures_present(tmp_path: Path) -> N
     train_mod = _load_train_mod()
     processed = tmp_path / "processed"
     features_dir = tmp_path / "features"
-    days = _business_days(date(2020, 1, 2), date(2020, 5, 29))
+    # Include pre-train warm-up so causal lookbacks are defined at train_start.
+    days = _business_days(date(2019, 11, 1), date(2020, 5, 29))
     _write_panel(processed, ("SPY", "QQQ"), days)
     cfg = tmp_path / "real.yaml"
     _write_training_config(cfg, processed, features_dir)

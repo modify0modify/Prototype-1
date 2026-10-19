@@ -9,8 +9,9 @@ data:
   universe: [SPY, QQQ, AAPL, MSFT]
   provider: yfinance
   timezone: UTC
-  # Must span training.train_start .. training.test_end (inclusive).
-  start_date: 2020-01-02
+  # Must start early enough for feature warm-up (max lookback, e.g. vol_percentile_window=252)
+  # *before* training.train_start, and cover through training.test_end.
+  start_date: 2019-01-02
   end_date: 2022-06-30
   raw_dir: data/raw
   interim_dir: data/interim
@@ -45,6 +46,10 @@ features:
   volume_zscore_window: 20
   drawdown_window: 60
   rolling_high_window: 60
+  # Regime lookbacks — data.start_date must leave ≥ max(these) sessions before train_start.
+  regime_trend_window: 50
+  regime_vol_window: 20
+  vol_percentile_window: 252
   include_portfolio_state: false
   include_fundamentals: false
   include_regime: true

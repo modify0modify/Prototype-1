@@ -7,6 +7,7 @@ from rl_trader.data.episode_loader import (
     EpisodeLoadResult,
     find_cleaned_ohlcv,
     load_episode_from_processed,
+    required_feature_warmup_bars,
 )
 from rl_trader.data.pipeline import (
     PipelineResult,
@@ -36,6 +37,7 @@ __all__ = [
     "find_cleaned_ohlcv",
     "get_provider",
     "load_episode_from_processed",
+    "required_feature_warmup_bars",
     "run_data_pipeline",
     "validate_ohlcv_frame",
 ]

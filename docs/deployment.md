@@ -81,7 +81,8 @@ cp .env.example .env
 ```bash
 # Quick research smoke window (short calendar):
 make download-data CONFIG=configs/research.yaml
-# Real training window (must cover training.train_start .. training.test_end):
+# Real training window (start_date must leave feature warm-up *before* train_start,
+# e.g. ≥252 sessions when vol_percentile_window=252, through test_end):
 python scripts/download_data.py --config configs/training.yaml
 ```
 

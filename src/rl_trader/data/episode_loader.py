@@ -166,6 +166,34 @@ def _build_or_load_features(
     return features, "built_from_ohlcv"
 
 
+def required_feature_warmup_bars(settings: FeatureSettings) -> int:
+    """Minimum shared sessions needed *before* ``train_start`` for causal lookbacks."""
+    windows: list[int] = [
+        settings.lookback_bars,
+        settings.rsi_period,
+        settings.macd_slow,
+        settings.macd_signal,
+        settings.bollinger_period,
+        settings.atr_period,
+        settings.volatility_window,
+        settings.downside_vol_window,
+        settings.volume_zscore_window,
+        settings.drawdown_window,
+        settings.rolling_high_window,
+        *settings.return_windows,
+        *settings.ma_windows,
+    ]
+    if settings.include_regime:
+        windows.extend(
+            [
+                settings.regime_trend_window,
+                settings.regime_vol_window,
+                settings.vol_percentile_window,
+            ]
+        )
+    return max(windows)
+
+
 def _validate_split_coverage(
     calendar: list[date],
     training: TrainingSettings,
@@ -206,9 +234,22 @@ def _validate_split_coverage(
         )
 
 
-def _finite_fill(arr: np.ndarray) -> np.ndarray:
-    """Replace non-finite values with 0 (warm-up / missing fundamentals)."""
-    return np.where(np.isfinite(arr), arr, 0.0)
+def _validate_feature_warmup(
+    full_index: pd.DatetimeIndex,
+    training: TrainingSettings,
+    features: FeatureSettings,
+) -> None:
+    """Refuse panels that lack enough pre-train history for configured lookbacks."""
+    need = required_feature_warmup_bars(features)
+    train_ts = pd.Timestamp(training.train_start, tz="UTC")
+    warmup_bars = int((full_index < train_ts).sum())
+    if warmup_bars < need:
+        raise EpisodeDataError(
+            f"insufficient feature warm-up before train_start={training.train_start.isoformat()}: "
+            f"need ≥{need} shared sessions (max causal lookback), got {warmup_bars}. "
+            "Set data.start_date earlier than training.train_start and re-download "
+            "(see configs/training.yaml). Refusing synthetic fallback."
+        )
 
 
 def load_episode_from_processed(
@@ -254,6 +295,7 @@ def load_episode_from_processed(
             "check cleaned parquet coverage. Refusing synthetic fallback."
         )
     full_index = full_index.sort_values()
+    _validate_feature_warmup(full_index, training, features)
 
     panel_start = pd.Timestamp(training.train_start, tz="UTC")
     panel_end = pd.Timestamp(training.test_end, tz="UTC") + pd.Timedelta(hours=23, minutes=59)
@@ -345,15 +387,17 @@ def load_episode_from_processed(
         feats = feats.reindex(episode_index)
         regime_block = _ensure_columns(feats, regime_names).to_numpy(dtype=np.float64)
 
-    market = _finite_fill(np.concatenate(market_blocks, axis=1))
+    # Keep NaNs through EpisodeData so FeatureScaler.fit can use nanmean/nanstd.
+    # Trainer zeros non-finite values only after fit (transform / env sanitize).
+    market = np.concatenate(market_blocks, axis=1)
     if fund_blocks:
-        fundamental = _finite_fill(np.concatenate(fund_blocks, axis=1))
+        fundamental = np.concatenate(fund_blocks, axis=1)
     else:
         fundamental = np.zeros((len(episode_index), 0), dtype=np.float64)
     if regime_block is None:
         regime = np.zeros((len(episode_index), 0), dtype=np.float64)
     else:
-        regime = _finite_fill(regime_block)
+        regime = regime_block
 
     timestamps = np.array(calendar, dtype=object)
     episode = EpisodeData(

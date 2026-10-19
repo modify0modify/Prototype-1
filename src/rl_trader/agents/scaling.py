@@ -63,6 +63,8 @@ class FeatureScaler:
             self.scale_ = np.where(std < self.eps, 1.0, std)
             # Replace non-finite means with 0 for sparse columns.
             self.mean_ = np.where(np.isfinite(self.mean_), self.mean_, 0.0)
+            # Constant / all-NaN columns keep scale=1 after nanstd → 0.
+            self.scale_ = np.where(np.isfinite(self.scale_), self.scale_, 1.0)
         self.n_market = episode.n_market
         self.n_fundamental = episode.n_fundamental
         self.n_regime = episode.n_regime
@@ -155,3 +157,28 @@ class FeatureScaler:
         if not isinstance(data, dict):
             raise ValueError("scaler root must be an object")
         return cls.from_dict(data)
+
+
+def episode_with_finite_features(episode: EpisodeData) -> EpisodeData:
+    """Zero non-finite exogenous features for env consumption.
+
+    Call this **after** train-only scaler fitting (or when normalization is off).
+    Do not use before ``FeatureScaler.fit`` — warm-up / missing NaNs must remain
+    NaN so ``nanmean`` / ``nanstd`` ignore them.
+    """
+    return EpisodeData(
+        timestamps=episode.timestamps,
+        prices=episode.prices,
+        market_features=np.where(
+            np.isfinite(episode.market_features), episode.market_features, 0.0
+        ),
+        fundamental_features=np.where(
+            np.isfinite(episode.fundamental_features),
+            episode.fundamental_features,
+            0.0,
+        ),
+        regime_features=np.where(
+            np.isfinite(episode.regime_features), episode.regime_features, 0.0
+        ),
+        symbols=episode.symbols,
+    )
