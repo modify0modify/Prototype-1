@@ -196,9 +196,10 @@ make build-features
 `--fixture` (CI smoke) and `--allow-synthetic` (explicit RNG panels) are opt-ins only.
 
 ```bash
-# 1) Download cleaned bars covering training.train_start .. training.test_end
+# 1) Download cleaned bars: data.start_date must leave warm-up history *before*
+#    training.train_start (e.g. ≥252 sessions for vol_percentile_window), through test_end
 python scripts/download_data.py --config configs/training.yaml
-# 2) Optional: persist feature parquets (train can also build them in-process)
+# 2) Optional: persist feature parquets for the full universe *including* the benchmark
 python scripts/build_features.py --config configs/training.yaml
 # 3) Train (scalers fit on train only; select on val; test report-only)
 python scripts/train_agent.py --config configs/training.yaml --algorithm ppo

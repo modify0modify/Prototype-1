@@ -9,12 +9,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from rl_trader.agents.scaling import FeatureScaler
+from rl_trader.agents.scaling import FeatureScaler, episode_with_finite_features
 from rl_trader.agents.splits import split_episode_by_dates
 from rl_trader.config.models import DataSettings, FeatureSettings, TrainingSettings
 from rl_trader.data.episode_loader import (
     EpisodeDataError,
     load_episode_from_processed,
+    required_feature_warmup_bars,
 )
 
 
@@ -116,20 +117,29 @@ def _training_windows() -> TrainingSettings:
     )
 
 
-def test_load_episode_from_labelled_ohlcv_fixtures(tmp_path: Path) -> None:
-    processed = tmp_path / "processed"
-    features_dir = tmp_path / "features"
-    days = _business_days(date(2020, 1, 2), date(2020, 5, 29))
-    assert len(days) >= 40
+def _panel_with_warmup(processed: Path, *, seed_base: int = 10) -> list[date]:
+    """OHLCV from before train_start through test_end (meets compact warmup)."""
+    features = _compact_feature_settings(Path("/tmp"))
+    need = required_feature_warmup_bars(features)
+    # ~need business days before 2020-01-02
+    days = _business_days(date(2019, 11, 1), date(2020, 5, 29))
+    assert sum(1 for d in days if d < date(2020, 1, 2)) >= need
     for i, sym in enumerate(("SPY", "QQQ")):
         _write_ohlcv(
             processed,
             sym,
             days,
-            seed=10 + i,
-            start_tag=date(2020, 1, 2),
-            end_tag=date(2020, 5, 29),
+            seed=seed_base + i,
+            start_tag=days[0],
+            end_tag=days[-1],
         )
+    return days
+
+
+def test_load_episode_from_labelled_ohlcv_fixtures(tmp_path: Path) -> None:
+    processed = tmp_path / "processed"
+    features_dir = tmp_path / "features"
+    _panel_with_warmup(processed)
 
     data = DataSettings(
         universe=("SPY", "QQQ"),
@@ -176,16 +186,16 @@ def test_refuse_missing_ohlcv(tmp_path: Path) -> None:
 
 def test_refuse_incomplete_date_coverage(tmp_path: Path) -> None:
     processed = tmp_path / "processed"
-    # Only January — does not cover val/test windows.
-    days = _business_days(date(2020, 1, 2), date(2020, 1, 31))
+    # Warmup + January only — does not cover val/test windows.
+    days = _business_days(date(2019, 11, 1), date(2020, 1, 31))
     for i, sym in enumerate(("SPY", "QQQ")):
         _write_ohlcv(
             processed,
             sym,
             days,
             seed=20 + i,
-            start_tag=date(2020, 1, 2),
-            end_tag=date(2020, 1, 31),
+            start_tag=days[0],
+            end_tag=days[-1],
         )
     data = DataSettings(
         universe=("SPY", "QQQ"),
@@ -198,7 +208,8 @@ def test_refuse_incomplete_date_coverage(tmp_path: Path) -> None:
         load_episode_from_processed(data, features, training)
 
 
-def test_require_feature_parquet_refuses_when_missing(tmp_path: Path) -> None:
+def test_refuse_insufficient_feature_warmup(tmp_path: Path) -> None:
+    """Bugbot: data starting at train_start leaves causal lookbacks undefined."""
     processed = tmp_path / "processed"
     days = _business_days(date(2020, 1, 2), date(2020, 5, 29))
     for i, sym in enumerate(("SPY", "QQQ")):
@@ -206,10 +217,70 @@ def test_require_feature_parquet_refuses_when_missing(tmp_path: Path) -> None:
             processed,
             sym,
             days,
-            seed=30 + i,
-            start_tag=date(2020, 1, 2),
-            end_tag=date(2020, 5, 29),
+            seed=40 + i,
+            start_tag=days[0],
+            end_tag=days[-1],
         )
+    data = DataSettings(
+        universe=("SPY", "QQQ"),
+        processed_dir=processed,
+        survivorship_bias_acknowledged=True,
+    )
+    features = _compact_feature_settings(tmp_path / "features")
+    training = _training_windows()
+    with pytest.raises(EpisodeDataError, match="warm-up|lookback"):
+        load_episode_from_processed(data, features, training)
+
+
+def test_nans_preserved_until_after_scaler_fit(tmp_path: Path) -> None:
+    """Bugbot: warm-up NaNs must not be zero-filled before FeatureScaler.fit."""
+    processed = tmp_path / "processed"
+    features_dir = tmp_path / "features"
+    _panel_with_warmup(processed, seed_base=50)
+
+    data = DataSettings(
+        universe=("SPY", "QQQ"),
+        processed_dir=processed,
+        survivorship_bias_acknowledged=True,
+    )
+    features = _compact_feature_settings(features_dir)
+    training = _training_windows()
+    result = load_episode_from_processed(
+        data, features, training, build_features_if_missing=True
+    )
+    splits = split_episode_by_dates(result.episode, training)
+    # Inject NaN to prove fit uses nanmean (zeros would bias the mean toward 0).
+    train = splits.train
+    market = train.market_features.copy()
+    market[:, 0] = 5.0
+    market[0, 0] = np.nan
+    from rl_trader.environment.episode import EpisodeData
+
+    train_nan = EpisodeData(
+        timestamps=train.timestamps,
+        prices=train.prices,
+        market_features=market,
+        fundamental_features=train.fundamental_features,
+        regime_features=train.regime_features,
+        symbols=train.symbols,
+    )
+    scaler = FeatureScaler().fit(train_nan, split="train")
+    assert scaler.mean_ is not None
+    assert np.isclose(scaler.mean_[0], 5.0)  # nanmean ignores the NaN row
+    # Contrast: zero-fill before fit would yield mean < 5.
+    zeroed = np.where(np.isfinite(market), market, 0.0)
+    assert float(np.mean(zeroed[:, 0])) < 5.0
+    scaled = scaler.transform(train_nan)
+    assert np.isfinite(scaled.market_features).all()
+    sanitized = episode_with_finite_features(train_nan)
+    assert np.isfinite(sanitized.market_features).all()
+    assert sanitized.market_features[0, 0] == 0.0
+
+
+
+def test_require_feature_parquet_refuses_when_missing(tmp_path: Path) -> None:
+    processed = tmp_path / "processed"
+    _panel_with_warmup(processed, seed_base=30)
     data = DataSettings(
         universe=("SPY", "QQQ"),
         processed_dir=processed,
@@ -221,3 +292,17 @@ def test_require_feature_parquet_refuses_when_missing(tmp_path: Path) -> None:
         load_episode_from_processed(
             data, features, training, build_features_if_missing=False
         )
+
+
+def test_required_feature_warmup_bars_uses_regime_window() -> None:
+    settings = FeatureSettings(
+        return_windows=(1,),
+        ma_windows=(5,),
+        drawdown_window=60,
+        rolling_high_window=60,
+        include_regime=True,
+        vol_percentile_window=252,
+        include_portfolio_state=False,
+        include_fundamentals=False,
+    )
+    assert required_feature_warmup_bars(settings) == 252

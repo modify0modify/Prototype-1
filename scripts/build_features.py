@@ -26,7 +26,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--symbol",
         type=str,
         default=None,
-        help="Single symbol (default: all non-benchmark names in universe)",
+        help="Single symbol (default: universe ∪ benchmark_symbol)",
     )
     return parser
 
@@ -52,13 +52,16 @@ def main(argv: list[str] | None = None) -> int:
 
     universe = list(settings.data.universe)
     benchmark = settings.features.benchmark_symbol.upper()
-    symbols = [args.symbol.upper()] if args.symbol else [s for s in universe if s != benchmark]
-    if not symbols:
-        symbols = universe[:]
+    # Always include the benchmark (regime + relative features). Skipping it left
+    # ``--require-feature-parquet`` training broken when SPY is in the universe.
+    if args.symbol:
+        symbols = [args.symbol.upper()]
+    else:
+        symbols = list(dict.fromkeys([*universe, benchmark]))
 
     bench_path = _find_cleaned(settings.data.processed_dir, benchmark)
     bench = pd.read_parquet(bench_path)
-    logger.info("benchmark=%s path=%s", benchmark, bench_path)
+    logger.info("benchmark=%s path=%s symbols=%s", benchmark, bench_path, symbols)
 
     failures = 0
     for symbol in symbols:
