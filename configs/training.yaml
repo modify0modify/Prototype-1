@@ -1,5 +1,6 @@
-# Training-mode overlay (research env + training hyperparams).
-# Does not start training by itself — consumed by future train scripts.
+# Training-mode overlay: real-data train path (processed OHLCV → EpisodeData).
+# Download must cover train_start..test_end (see data.start_date / end_date).
+# GPU: set training.device: cuda (RunPod). Never enables live trading.
 app_mode: research
 seed: 42
 live_trading_enabled: false
@@ -8,10 +9,45 @@ data:
   universe: [SPY, QQQ, AAPL, MSFT]
   provider: yfinance
   timezone: UTC
+  # Must span training.train_start .. training.test_end (inclusive).
+  start_date: 2020-01-02
+  end_date: 2022-06-30
+  raw_dir: data/raw
+  interim_dir: data/interim
+  processed_dir: data/processed
+  cache_dir: data/interim/cache
+  quality_report_dir: reports/data_quality
+  jump_threshold: 0.20
+  allow_missing_bars: false
+  point_in_time_universe: false
+  survivorship_bias_acknowledged: true
 
 features:
   lookback_bars: 20
+  normalize: false
   causal_only: true
+  feature_version: "1"
+  benchmark_symbol: SPY
+  output_dir: data/processed/features
+  manifest_dir: data/processed/features
+  quality_report_dir: reports/feature_quality
+  return_windows: [1, 5, 20]
+  ma_windows: [5, 20]
+  rsi_period: 14
+  macd_fast: 12
+  macd_slow: 26
+  macd_signal: 9
+  bollinger_period: 20
+  bollinger_std: 2.0
+  atr_period: 14
+  volatility_window: 20
+  downside_vol_window: 20
+  volume_zscore_window: 20
+  drawdown_window: 60
+  rolling_high_window: 60
+  include_portfolio_state: false
+  include_fundamentals: false
+  include_regime: true
   drop_na_rows: false
 
 training:
@@ -37,6 +73,7 @@ training:
   target_policy_noise: 0.2
   target_noise_clip: 0.5
   seed: 42
+  # Use cuda on RunPod / GPU hosts: device: cuda
   device: cpu
   checkpoint_dir: models/checkpoints
   comparison_dir: reports/agent_comparison

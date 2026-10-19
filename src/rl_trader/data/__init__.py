@@ -2,6 +2,12 @@
 
 from rl_trader.data.cleaning import CleaningResult, clean_ohlcv
 from rl_trader.data.download import DownloadRequest, FixtureProvider, StubDownloader
+from rl_trader.data.episode_loader import (
+    EpisodeDataError,
+    EpisodeLoadResult,
+    find_cleaned_ohlcv,
+    load_episode_from_processed,
+)
 from rl_trader.data.pipeline import (
     PipelineResult,
     SymbolPipelineResult,
@@ -17,6 +23,8 @@ __all__ = [
     "DataQualityReport",
     "DownloadMeta",
     "DownloadRequest",
+    "EpisodeDataError",
+    "EpisodeLoadResult",
     "FixtureProvider",
     "MarketDataProvider",
     "OHLCVDownload",
@@ -25,7 +33,9 @@ __all__ = [
     "SymbolPipelineResult",
     "ValidationReport",
     "clean_ohlcv",
+    "find_cleaned_ohlcv",
     "get_provider",
+    "load_episode_from_processed",
     "run_data_pipeline",
     "validate_ohlcv_frame",
 ]

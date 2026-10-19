@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """Train a portfolio agent with PPO, SAC, or TD3 (Stable-Baselines3).
 
-Reads settings from YAML/config. Fits feature scalers on the training window
-only; early-stops / selects on validation; never uses the test set for fitting
-or model selection. Use ``--fixture`` for a tiny offline smoke run.
+Default (non-fixture) path loads cleaned OHLCV (+ features) for
+``settings.data.universe``, splits by configured train/val/test dates, fits
+feature scalers on the **training** window only, selects on validation, and
+reports test only after selection.
+
+``--fixture`` and ``--allow-synthetic`` are explicit opt-ins. Missing or
+incomplete processed data fails clearly — there is no silent synthetic fallback.
 """
 
 from __future__ import annotations
@@ -23,6 +27,7 @@ from rl_trader.agents.splits import (
 from rl_trader.agents.trainer import train_agent
 from rl_trader.config import get_settings
 from rl_trader.config.models import TrainingSettings
+from rl_trader.data.episode_loader import EpisodeDataError, load_episode_from_processed
 from rl_trader.environment.episode import EpisodeData
 from rl_trader.environment.synthetic import make_synthetic_episode
 from rl_trader.monitoring import configure_logging, get_logger
@@ -119,8 +124,8 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help=(
             "Permit synthetic prices on configured calendar dates "
-            "(otherwise non-fixture training is refused — prevents mistaking "
-            "RNG paths for market history)"
+            "(explicit opt-in only — never used as a silent fallback when "
+            "processed OHLCV is missing)"
         ),
     )
     parser.add_argument(
@@ -140,6 +145,15 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=None,
         help="Override checkpoint output directory",
+    )
+    parser.add_argument(
+        "--require-feature-parquet",
+        action="store_true",
+        help=(
+            "Do not build features from OHLCV in-process; require "
+            "data/processed/features/{SYMBOL}_features.parquet "
+            "(run make build-features first)"
+        ),
     )
     args = parser.parse_args(argv)
 
@@ -211,22 +225,14 @@ def main(argv: list[str] | None = None) -> int:
             episode.symbols,
             training.algorithm,
         )
-    else:
-        if not args.allow_synthetic:
-            logger.error(
-                "refusing train without market data: non-fixture path would build "
-                "synthetic prices on real calendar dates (looks like history). "
-                "Use --fixture for labelled smoke data, or --allow-synthetic to "
-                "acknowledge RNG panels, or load processed OHLCV first."
-            )
-            return 2
+    elif args.allow_synthetic:
         episode = _episode_for_configured_dates(
             training, settings.data.universe, training.seed
         )
         splits = split_episode_by_dates(episode, training)
         logger.warning(
             "SYNTHETIC date-split train=%s..%s val=%s..%s test=%s..%s bars=%d "
-            "(not market history)",
+            "(explicit --allow-synthetic; not market history)",
             training.train_start,
             training.train_end,
             training.val_start,
@@ -235,14 +241,40 @@ def main(argv: list[str] | None = None) -> int:
             training.test_end,
             episode.n_bars,
         )
+    else:
+        try:
+            loaded = load_episode_from_processed(
+                settings.data,
+                settings.features,
+                training,
+                universe=settings.data.universe,
+                build_features_if_missing=not args.require_feature_parquet,
+            )
+        except EpisodeDataError as exc:
+            logger.error("%s", exc)
+            return 2
+        episode = loaded.episode
+        splits = split_episode_by_dates(episode, training)
+        logger.info(
+            "real-data episode bars=%d assets=%s range=%s..%s "
+            "feature_sources=%s ohlcv=%s device=%s",
+            episode.n_bars,
+            episode.symbols,
+            loaded.index_start,
+            loaded.index_end,
+            loaded.feature_sources,
+            {k: str(v) for k, v in loaded.ohlcv_paths.items()},
+            training.device,
+        )
 
     out_dir = args.output_dir or (training.checkpoint_dir / training.model_id)
     logger.info(
-        "starting %s training model_id=%s timesteps=%d out=%s",
+        "starting %s training model_id=%s timesteps=%d out=%s device=%s",
         training.algorithm.upper(),
         training.model_id,
         training.total_timesteps,
         out_dir,
+        training.device,
     )
     result = train_agent(
         splits,
